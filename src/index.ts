@@ -2,16 +2,18 @@ process.on(`unhandledRejection`, (reason, promise) => {
     console.error(`Unhandled Rejection at:`, promise, `reason:`, reason);
     process.exit(1);
 });
+import { Options } from "lib";
 import "lib/polyfill";
-var json_stringify = require('./lib/stringify.js').stringify;
-var json_parse     = require('./lib/parse.js');
+import { newParse } from "parse";
+import { stringify } from "stringify";
 
-module.exports = function(options) {
-    return  {
-        parse: json_parse(options),
-        stringify: json_stringify
-    }
-};
-//create the default method members with no options applied for backwards compatibility
-module.exports.parse = json_parse();
-module.exports.stringify = json_stringify;
+export default Object.assign(
+    (options?: Options) => {
+        return {
+            parse: newParse(options),
+            stringify,
+        };
+    },
+    // default options
+    { parse: newParse(), stringify },
+);
