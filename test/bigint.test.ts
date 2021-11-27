@@ -1,31 +1,36 @@
-var mocha  = require('mocha')
-  , assert = require('chai').assert
-  , expect = require('chai').expect
-  , BigNumber = require('bignumber.js')
-  ;
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/naming-convention */
+import JSB from "index";
 
-describe("Testing bigint support", function(){
-    var input = '{"big":9223372036854775807,"small":123}';
+describe(`Testing bigint support`, function () {
+    const input = `{"big":9223372036854775807,"small":123}`;
 
-    it("Should show classic JSON.parse lacks bigint support", function(done){
-        var obj = JSON.parse(input);
-        expect(obj.small.toString(), "string from small int").to.equal("123");
-        expect(obj.big.toString(), "string from big int").to.not.equal("9223372036854775807");
+    it(`Should show classic JSON.parse lacks bigint support`, function (done) {
+        const obj = JSON.parse(input);
+        // string from small int
+        expect(obj.small.toString()).toEqual(`123`);
+        // string from big int
+        expect(obj.big.toString()).not.toEqual(`9223372036854775807`);
 
-        var output = JSON.stringify(obj);
-        expect(output).to.not.equal(input);
+        const output = JSON.stringify(obj);
+        expect(output).not.toEqual(input);
         done();
     });
 
-    it("Should show JSONbig does support bigint parse/stringify roundtrip", function(done){
-        var JSONbig = require('../index');
-        var obj = JSONbig.parse(input);
-        expect(obj.small.toString(), "string from small int").to.equal("123");
-        expect(obj.big.toString(), "string from big int").to.equal("9223372036854775807");
-        expect(obj.big, "instanceof big int").to.be.instanceof(BigNumber);
+    it(`Should show JSONbig does support bigint parse/stringify roundtrip`, function (done) {
+        const JSONbig = JSB;
+        const obj = JSONbig.parse(input);
+        // string from small int
+        expect(obj.small.toString()).toEqual(`123`);
+        // string from big int
+        expect(obj.big.toString()).toEqual(`9223372036854775807`);
+        // instanceof big int
+        expect(typeof obj.big).toEqual(`bigint`);
 
-        var output = JSONbig.stringify(obj);
-        expect(output).to.equal(input);
+        const output = JSONbig.stringify(obj);
+        expect(output).toEqual(input);
         done();
     });
 });
