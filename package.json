@@ -1,0 +1,74 @@
+{
+    "name": "another-json-bigint",
+    "version": "0.0.0",
+    "description": "Forked from json-bigint, rewritten in TS",
+    "keywords": [
+        "another-json-bigint"
+    ],
+    "main": "dist/index.js",
+    "bin": "dist/index.js",
+    "license": "MIT",
+    "repository": "https://github.com/haoadoresorange",
+    "author": "haoadoresorange",
+    "files": [
+        "dist",
+        "src"
+    ],
+    "scripts": {
+        "postinstall": "husky install",
+        "pump-version": "yarn version --no-commit-hooks",
+        "prepack": "pinst --disable && yarn build",
+        "postpack": "pinst --enable",
+        "build": "rimraf dist && gulp",
+        "start": "NODE_ENV=production node dist/index.js",
+        "dev": "NODE_PATH=src ts-node-dev src/index.ts",
+        "lint": "eslint '**/*.{js,ts}' --quiet --fix",
+        "lint-staged": "lint-staged",
+        "test": "jest"
+    },
+    "lint-staged": {
+        "*.{js,ts}": [
+            "eslint --quiet --fix"
+        ]
+    },
+    "jest": {
+        "preset": "ts-jest",
+        "moduleDirectories": [
+            "node_modules",
+            "src"
+        ]
+    },
+    "devDependencies": {
+        "@tsconfig/node14": "^1.0.1",
+        "@types/jest": "^26.0.23",
+        "@types/node": "^14.14.37",
+        "@typescript-eslint/eslint-plugin": "^4.22.0",
+        "@typescript-eslint/parser": "^4.22.0",
+        "@zerollup/ts-transform-paths": "^1.7.18",
+        "eslint": "^7.24.0",
+        "eslint-config-prettier": "^8.1.0",
+        "eslint-plugin-prettier": "^3.3.1",
+        "gulp": "^4.0.2",
+        "gulp-sourcemaps": "^3.0.0",
+        "gulp-strip-code": "^0.1.4",
+        "gulp-typescript": "^6.0.0-alpha.1",
+        "husky": "^7.0.4",
+        "jest": "^27.0.4",
+        "lint-staged": "^10.5.4",
+        "pinst": "^2.1.6",
+        "prettier": "^2.2.1",
+        "rimraf": "^3.0.2",
+        "ts-jest": "^27.0.2",
+        "ts-node-dev": "^1.1.6",
+        "ttypescript": "^1.5.12",
+        "typescript": "^4.2.4"
+    },
+    "dependenciesDescription": {
+        "@tsconfig/node14": "Recommend tsconfig for node 14",
+        "@typescript-eslint/eslint-plugin": "ESLint rules for TS",
+        "eslint-config-prettier": "Turn off ESLint rules that conflict with Prettier",
+        "eslint-plugin-prettier": "Run Prettier as ESLint rule (no need to run prettier command) and show errors as ESLint errors",
+        "ts-jest": "Run Jest directly on TS",
+        "ts-node-dev": "Node dev server for TS"
+    }
+}
