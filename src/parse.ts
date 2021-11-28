@@ -26,10 +26,19 @@ const ESCAPEE = {
     t: `\t`,
 } as const;
 
+type BigIntOrNumber = `bigint` | `number`;
+type Schema = BigIntOrNumber | ((n: string) => BigIntOrNumber) | { [key: string]: Schema } | Schema[] | null;
+
 type JsonValue = Record<string, unknown> | unknown[] | string | number | bigint | boolean | null;
 // Closure for internal state variables.
 // Parser's internal state variables are prefixed with p_, methods are prefixed with p
-export const newParse = (p_user_options?: JsonBigIntOptions): typeof JSON.parse => {
+export const newParse = (
+    p_user_options?: JsonBigIntOptions,
+): ((
+    text: string,
+    reviver?: ((this: any, key: string, value: any) => any) | null,
+    schema?: Schema,
+) => any) => {
     // This returns a function that can parse a JSON text, producing a JavaScript
     // data structure. It is a simple, recursive descent parser. It does not use
     // eval or regular expressions, so it can be used as a model for implementing
@@ -112,8 +121,9 @@ export const newParse = (p_user_options?: JsonBigIntOptions): typeof JSON.parse 
         if (c) pCurrentCharIs(c);
         return p_current_char;
     };
-    const pNumber = () => {
+    const pNumber = (schema?: Schema) => {
         // Parse a number value.
+        schema = schema === `bigint` || schema === `number` || typeof schema === `function` ? schema : null;
 
         let result_string = ``;
 
@@ -149,12 +159,16 @@ export const newParse = (p_user_options?: JsonBigIntOptions): typeof JSON.parse 
             return pError(`Bad number`);
         } else {
             if (Number.isSafeInteger(result_number))
-                return !p_options.alwaysParseAsBigInt ? result_number : BigInt(result_number);
+                return p_options.alwaysParseAsBigInt ||
+                    (typeof schema === `function` ? schema(result_string) : schema) === `bigint`
+                    ? BigInt(result_number)
+                    : result_number;
             // Number with fractional part should be treated as number(double) including big integers in scientific notation, i.e 1.79e+308
             else
                 return p_options.parseBigIntAsString
                     ? result_string
-                    : /[.eE]/.test(result_string)
+                    : /[.eE]/.test(result_string) ||
+                      (typeof schema === `function` ? schema(result_string) : schema) === `number`
                     ? result_number
                     : BigInt(result_string);
         }
@@ -232,7 +246,7 @@ export const newParse = (p_user_options?: JsonBigIntOptions): typeof JSON.parse 
         }
         return pError(`Unexpected '${p_current_char}'`);
     };
-    const pArray = () => {
+    const pArray = (schema?: Schema) => {
         // Parse an array value.
 
         const result: JsonValue[] = [];
@@ -246,7 +260,15 @@ export const newParse = (p_user_options?: JsonBigIntOptions): typeof JSON.parse 
                 return result; // empty array
             }
             while (p_current_char) {
-                result.push(pJsonValue());
+                result.push(
+                    pJsonValue(
+                        Array.isArray(schema)
+                            ? schema.length > 1
+                                ? schema[result.length]
+                                : schema[0]
+                            : null,
+                    ),
+                );
                 pSkipWhite();
                 // @ts-expect-error next() change ch
                 if (p_current_char === `]`) {
@@ -260,7 +282,7 @@ export const newParse = (p_user_options?: JsonBigIntOptions): typeof JSON.parse 
         }
         return pError(`Bad array`);
     };
-    const pObject = () => {
+    const pObject = (schema?: Schema) => {
         // Parse an object value.
 
         // TODO: remove null, we want the object to have Object's prototype
@@ -276,6 +298,7 @@ export const newParse = (p_user_options?: JsonBigIntOptions): typeof JSON.parse 
             }
             while (p_current_char) {
                 const key = pString();
+                schema = isNonNullObject(schema) ? schema[key] : null;
                 pSkipWhite();
                 pCurrentCharIs(`:`);
                 pNext();
@@ -289,7 +312,7 @@ export const newParse = (p_user_options?: JsonBigIntOptions): typeof JSON.parse 
                     } else if (p_options.protoAction === `ignore`) {
                         pJsonValue();
                     } else {
-                        result[key] = pJsonValue();
+                        result[key] = pJsonValue(schema);
                     }
                 } else if (SUSPECT_CONSTRUCTOR_RX.test(key) === true) {
                     if (p_options.constructorAction === `error`) {
@@ -297,10 +320,10 @@ export const newParse = (p_user_options?: JsonBigIntOptions): typeof JSON.parse 
                     } else if (p_options.constructorAction === `ignore`) {
                         pJsonValue();
                     } else {
-                        result[key] = pJsonValue();
+                        result[key] = pJsonValue(schema);
                     }
                 } else {
-                    result[key] = pJsonValue();
+                    result[key] = pJsonValue(schema);
                 }
 
                 pSkipWhite();
@@ -316,33 +339,33 @@ export const newParse = (p_user_options?: JsonBigIntOptions): typeof JSON.parse 
         }
         return pError(`Bad object`);
     };
-    const pJsonValue = (): JsonValue => {
+    const pJsonValue = (schema?: Schema): JsonValue => {
         // Parse a JSON value. It could be an object, an array, a string, a number,
         // or boolean or null.
 
         pSkipWhite();
         switch (p_current_char) {
             case `{`:
-                return pObject();
+                return pObject(schema);
             case `[`:
-                return pArray();
+                return pArray(schema);
             case `"`:
                 return pString();
             case `-`:
-                return pNumber();
+                return pNumber(schema);
             default:
-                return p_current_char >= `0` && p_current_char <= `9` ? pNumber() : pBooleanOrNull();
+                return p_current_char >= `0` && p_current_char <= `9` ? pNumber(schema) : pBooleanOrNull();
         }
     };
 
     // Return the parse function.
-    return (text, reviver) => {
+    return (text, reviver, schema) => {
         // Reset state.
         p_current_char_index = -1; // next char will begin at 0
         p_current_char = ` `;
         p_text = text.toString();
 
-        const result = pJsonValue();
+        const result = pJsonValue(schema);
         pSkipWhite();
         if (p_current_char) {
             pError(`Syntax error`);

@@ -171,6 +171,42 @@ const user = JSONbig.parse('{ "__proto__": { "admin": true }, "id": 12345 }');
 // => result is { id: 12345 }
 ```
 
+### JSONbig.parse(text[, reviver[, schema]])
+
+`JSONbig.parse` support a 3rd option, which is a schema-like object, this is an ad-hoc solution for the limitation `o !== JSONbig.parse(JSONbig.stringify(o))`
+
+This limitation exists because JS treats `BigInt` and `Number` as 2 separate types which cannot be cooerced. The parser choses an appropriate type based on the size of the number in JSON string. This introduces 2 problems:
+- As stated above, `JSONbig.parse(JSONbig.stringify(123n))` returns `123` because the number is small enough
+- The type of one field is not consistent, for example one API can return a response in which a field can sometimes be `BigInt` and other times be `Number`
+
+There's the option to parse all `Number` as `BigInt` but IMHO this isn't much desirable. Libraries solved (2) by iterating the parsed result and enforce the type as you can see [here](https://github.com/theia-ide/tsp-typescript-client/pull/37). That PR has an interesting approach which this solution is inspired from.
+
+In order to solve this, we need an API for users to decide per case & per field level whether it should be `BigInt` or `Number`. This API is exposed through a schema-like object. Its type is defined as following;
+
+```typescript
+type BigIntOrNumber = `bigint` | `number`;
+type Schema = BigIntOrNumber | ((n: string) => BigIntOrNumber) | { [key: string]: Schema } | Schema[];
+```
+
+To put it simple, the schema-like argument is an object with fields and sub-fields being the fields and sub-fields of the expected parsed object, following the same structure, for which users want to specify whether it is parsed as `BigInt` or `Number`.
+
+Those fields can take 3 different values, a string 'bigint' or 'number' meaning it will be parsed as `BigInt` or `Number`, respectively. The 3rd value it can also take is a callback function `(n: string) => 'bigint' | 'number'`, with `n` being the string of the underlying JSON number. Users for example can use this callback to `throw Error` in case the underlying JSON number is not fitting in a `Number`.
+
+For `Array` in the schema-like object, a single item array is treated as `T[]`, that is the item will be the schema for all items in the parsed array. An array with multiple items in the schema-like object will be used as tuple type, that is each of the item with be the schema for the corresponding index item in the parsed array. If `parsed_array.length > schema_array.length`, the parsed array's items which has no corresponding index in the schema array act as having no schema.
+
+If a value different from those defined above passed in or returned from the callback, it is as if there is no schema.
+
+example:
+
+```typescript
+JSONbig.parse(`{"a": {"b": 123} }`, null, { a: { b: `bigint` } }) // returns {a: {b: 123n} }
+JSONbig.parse(`{"a": {"b": 123} }`, null, {a: {b: (n: string) => { if (n === `123`) throw new Error(`cannot be 123`); return `number` } }})
+JSONbig.parse(`{"a": [1, 2, 3] }`, null, {a: [`bigint`]}) // returns {a: [1n, 2n, 3n] }
+JSONbig.parse(`{"a": [1, 2, 3] }`, null, {a: [`bigint`, `bigint`]}) // returns {a: [1n, 2n, 3] }
+JSONbig.parse(`{"a": [1, 2, 3] }`, null, {a: [`bigint`, null]}) // returns {a: [1n, 2, 3] }
+JSONbig.parse(`{"a": [1, 2, 3] }`, null, {a: [null, null, `bigint`]}) // returns {a: [1, 2, 3n] }
+```
+
 ### Links:
 
 - [RFC4627: The application/json Media Type for JavaScript Object Notation (JSON)](http://www.ietf.org/rfc/rfc4627.txt)
