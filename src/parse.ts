@@ -1,404 +1,351 @@
-import { isObject, Options } from "lib";
+import { JsonBigIntOptions, PROTO_ACTIONS, CONSTRUCTOR_ACTIONS } from "lib";
+
+const isNonNullObject = (o: unknown): o is Record<string, unknown> => {
+    return typeof o === `object` && o !== null;
+};
+
 // regexpxs extracted from
 // (c) BSD-3-Clause
 // https://github.com/fastify/secure-json-parse/graphs/contributors and https://github.com/hapijs/bourne/graphs/contributors
-
-const suspect_proto_rx =
+// eslint-disable-next-line @typescript-eslint/naming-convention
+const SUSPECT_PROTO_RX =
     /(?:_|\\u005[Ff])(?:_|\\u005[Ff])(?:p|\\u0070)(?:r|\\u0072)(?:o|\\u006[Ff])(?:t|\\u0074)(?:o|\\u006[Ff])(?:_|\\u005[Ff])(?:_|\\u005[Ff])/;
-const suspect_constructor_rx =
+// eslint-disable-next-line @typescript-eslint/naming-convention
+const SUSPECT_CONSTRUCTOR_RX =
     /(?:c|\\u0063)(?:o|\\u006[Ff])(?:n|\\u006[Ee])(?:s|\\u0073)(?:t|\\u0074)(?:r|\\u0072)(?:u|\\u0075)(?:c|\\u0063)(?:t|\\u0074)(?:o|\\u006[Ff])(?:r|\\u0072)/;
 
-/*
-    json_parse.js
-    2012-06-20
+// eslint-disable-next-line @typescript-eslint/naming-convention
+const ESCAPEE = {
+    '"': `"`,
+    "\\": `\\`,
+    "/": `/`,
+    b: `\b`,
+    f: `\f`,
+    n: `\n`,
+    r: `\r`,
+    t: `\t`,
+} as const;
 
-    Public Domain.
-
-    NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
-
-    This file creates a json_parse function.
-    During create you can (optionally) specify some behavioural switches
-
-        require('json-bigint')(options)
-
-            The optional options parameter holds switches that drive certain
-            aspects of the parsing process:
-            * options.strict = true will warn about duplicate-key usage in the json.
-              The default (strict = false) will silently ignore those and overwrite
-              values for keys that are in duplicate use.
-
-    The resulting function follows this signature:
-        json_parse(text, reviver)
-            This method parses a JSON text to produce an object or array.
-            It can throw a SyntaxError exception.
-
-            The optional reviver parameter is a function that can filter and
-            transform the results. It receives each of the keys and values,
-            and its return value is used instead of the original value.
-            If it returns what it received, then the structure is not modified.
-            If it returns undefined then the member is deleted.
-
-            Example:
-
-            // Parse the text. Values that look like ISO date strings will
-            // be converted to Date objects.
-
-            myData = json_parse(text, function (key, value) {
-                var a;
-                if (typeof value === 'string') {
-                    a =
-/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*)?)Z$/.exec(value);
-                    if (a) {
-                        return new Date(Date.UTC(+a[1], +a[2] - 1, +a[3], +a[4],
-                            +a[5], +a[6]));
-                    }
-                }
-                return value;
-            });
-
-    This is a reference implementation. You are free to copy, modify, or
-    redistribute.
-
-    This code should be minified before deployment.
-    See http://javascript.crockford.com/jsmin.html
-
-    USE YOUR OWN COPY. IT IS EXTREMELY UNWISE TO LOAD CODE FROM SERVERS YOU DO
-    NOT CONTROL.
-*/
-
-/*members "", "\"", "\/", "\\", at, b, call, charAt, f, fromCharCode,
-    hasOwnProperty, message, n, name, prototype, push, r, t, text
-*/
-
-type Value = Record<string, unknown> | unknown[] | string | number | bigint | boolean | null;
-export const newParse = (user_options?: Options): typeof JSON.parse => {
-    "use strict";
-
-    // This is a function that can parse a JSON text, producing a JavaScript
+type JsonValue = Record<string, unknown> | unknown[] | string | number | bigint | boolean | null;
+// Closure for internal state variables.
+// Parser's internal state variables are prefixed with p_, methods are prefixed with p
+export const newParse = (p_user_options?: JsonBigIntOptions): typeof JSON.parse => {
+    // This returns a function that can parse a JSON text, producing a JavaScript
     // data structure. It is a simple, recursive descent parser. It does not use
     // eval or regular expressions, so it can be used as a model for implementing
     // a JSON parser in other languages.
 
-    // We are defining the function inside of another function to avoid creating
-    // global variables.
+    let p_current_char_index: number, // Index of current character
+        p_current_char: string, // Current character
+        p_text: string; // Text being parsed
 
-    // Default options one can override by passing options to the parse()
-    const options: Options = {
-        strict: false, // not being strict means do not generate syntax errors for "duplicate key"
-        storeAsString: false, // toggles whether the values should be stored as BigNumber (default) or a string
-        alwaysParseAsBig: false, // toggles whether all numbers should be Big
+    // Default options.
+    const p_options: JsonBigIntOptions = {
+        strict: false, // Not being strict means do not generate syntax errors for "duplicate key"
+        parseBigIntAsString: false,
+        alwaysParseAsBigInt: false, // Toggles whether all numbers should be BigInt
         protoAction: `error`,
         constructorAction: `error`,
     };
 
-    // If there are options, then use them to override the default _options
-    if (user_options !== undefined && user_options !== null) {
-        if (user_options.strict === true) {
-            options.strict = true;
+    // If there are options, then use them to override the default options.
+    // These checks are for JS users with no type checking.
+    if (p_user_options) {
+        if (p_user_options.strict === true) {
+            p_options.strict = p_user_options.strict;
         }
-        if (user_options.storeAsString === true) {
-            options.storeAsString = true;
+        if (p_user_options.parseBigIntAsString === true) {
+            p_options.parseBigIntAsString = p_user_options.parseBigIntAsString;
         }
-        options.alwaysParseAsBig =
-            user_options.alwaysParseAsBig === true ? user_options.alwaysParseAsBig : false;
+        if (p_user_options.alwaysParseAsBigInt === true) {
+            p_options.alwaysParseAsBigInt = p_user_options.alwaysParseAsBigInt;
+        }
 
-        if (typeof user_options.constructorAction !== `undefined`) {
-            if (
-                user_options.constructorAction === `error` ||
-                user_options.constructorAction === `ignore` ||
-                user_options.constructorAction === `preserve`
-            ) {
-                options.constructorAction = user_options.constructorAction;
+        if (p_user_options.protoAction) {
+            if (PROTO_ACTIONS.includes(p_user_options.protoAction)) {
+                p_options.protoAction = p_user_options.protoAction;
             } else {
                 throw new Error(
-                    // this case is possible in JS but not TS
+                    // This case is possible in JS but not TS (hence type never).
                     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-                    `Incorrect value for constructorAction option, must be "error", "ignore" or undefined but passed ${user_options.constructorAction}`,
+                    `Incorrect value for protoAction option, must be ${PROTO_ACTIONS.join(`, `)} but passed ${
+                        p_user_options.protoAction
+                    }`,
                 );
             }
         }
-
-        if (typeof user_options.protoAction !== `undefined`) {
-            if (
-                user_options.protoAction === `error` ||
-                user_options.protoAction === `ignore` ||
-                user_options.protoAction === `preserve`
-            ) {
-                options.protoAction = user_options.protoAction;
+        if (p_user_options.constructorAction) {
+            if (CONSTRUCTOR_ACTIONS.includes(p_user_options.constructorAction)) {
+                p_options.constructorAction = p_user_options.constructorAction;
             } else {
                 throw new Error(
-                    // this case is possible in JS but not TS
+                    // This case is possible in JS but not TS (hence type never).
                     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-                    `Incorrect value for protoAction option, must be "error", "ignore" or undefined but passed ${user_options.protoAction}`,
+                    `Incorrect value for constructorAction option, must be ${CONSTRUCTOR_ACTIONS.join(
+                        `, `,
+                    )} but passed ${p_user_options.constructorAction}`,
                 );
             }
         }
     }
 
-    let at: number, // The index of the current character
-        ch: string, // The current character
-        text: string;
-    const escapee = {
-        '"': `"`,
-        "\\": `\\`,
-        "/": `/`,
-        b: `\b`,
-        f: `\f`,
-        n: `\n`,
-        r: `\r`,
-        t: `\t`,
-    };
-    const error = (m: string) => {
+    const pError = (m: string) => {
         // Call error when something is wrong.
         throw {
             name: `SyntaxError`,
             message: m,
-            at: at,
-            text: text,
+            at: p_current_char_index,
+            text: p_text,
         };
     };
-    const next = (c?: string) => {
-        // If a c parameter is provided, verify that it matches the current character.
-
-        if (c && c !== ch) {
-            return error(`Expected '` + c + `' instead of '` + ch + `'`);
+    const pCurrentCharIs = (c: string) => {
+        // Verify that it matches the current character.
+        if (c !== p_current_char) {
+            return pError(`Expected '` + c + `' instead of '` + p_current_char + `'`);
         }
-
+    };
+    const pNext = (c?: string) => {
         // Get the next character. When there are no more characters,
         // return the empty string.
-
-        ch = text.charAt(at);
-        at += 1;
-        return ch;
+        p_current_char = p_text.charAt(++p_current_char_index);
+        // If a c parameter is provided, verify that it matches the next character.
+        if (c) pCurrentCharIs(c);
+        return p_current_char;
     };
-    const number = function () {
+    const pNumber = () => {
         // Parse a number value.
 
-        let string = ``;
+        let result_string = ``;
 
-        if (ch === `-`) {
-            string = `-`;
-            next(`-`);
+        if (p_current_char === `-`) {
+            result_string = p_current_char;
+            pNext();
         }
-        while (ch >= `0` && ch <= `9`) {
-            string += ch;
-            next();
+        while (p_current_char >= `0` && p_current_char <= `9`) {
+            result_string += p_current_char;
+            pNext();
         }
-        if (ch === `.`) {
-            string += `.`;
-            while (next() && ch >= `0` && ch <= `9`) {
-                string += ch;
+        if (p_current_char === `.`) {
+            result_string += p_current_char;
+            while (pNext() && p_current_char >= `0` && p_current_char <= `9`) {
+                result_string += p_current_char;
             }
         }
-        if (ch === `e` || ch === `E`) {
-            string += ch;
-            next();
+        if (p_current_char === `e` || p_current_char === `E`) {
+            result_string += p_current_char;
+            pNext();
             // @ts-expect-error next() change ch
-            if (ch === `-` || ch === `+`) {
-                string += ch;
-                next();
+            if (p_current_char === `-` || p_current_char === `+`) {
+                result_string += p_current_char;
+                pNext();
             }
-            while (ch >= `0` && ch <= `9`) {
-                string += ch;
-                next();
+            while (p_current_char >= `0` && p_current_char <= `9`) {
+                result_string += p_current_char;
+                pNext();
             }
         }
-        const number = +string;
-        if (!isFinite(number)) {
-            return error(`Bad number`);
+        const result_number = +result_string;
+        if (!isFinite(result_number)) {
+            return pError(`Bad number`);
         } else {
-            if (Number.isSafeInteger(number)) return !options.alwaysParseAsBig ? number : BigInt(number);
+            if (Number.isSafeInteger(result_number))
+                return !p_options.alwaysParseAsBigInt ? result_number : BigInt(result_number);
             // Number with fractional part should be treated as number(double) including big integers in scientific notation, i.e 1.79e+308
-            else return options.storeAsString ? string : /[.eE]/.test(string) ? number : BigInt(string);
+            else
+                return p_options.parseBigIntAsString
+                    ? result_string
+                    : /[.eE]/.test(result_string)
+                    ? result_number
+                    : BigInt(result_string);
         }
     };
 
-    const string = function () {
+    const pString = () => {
         // Parse a string value.
 
-        let hex,
-            i,
-            string = ``,
-            uffff;
+        let result = ``;
 
         // When parsing for string values, we must look for " and \ characters.
 
-        if (ch === `"`) {
-            let start_at = at;
-            while (next()) {
-                if (ch === `"`) {
-                    if (at - 1 > start_at) string += text.substring(start_at, at - 1);
-                    next();
-                    return string;
+        if (p_current_char === `"`) {
+            let start_at = p_current_char_index + 1;
+            while (pNext()) {
+                if (p_current_char === `"`) {
+                    if (p_current_char_index > start_at)
+                        result += p_text.substring(start_at, p_current_char_index);
+                    pNext();
+                    return result;
                 }
-                if (ch === `\\`) {
-                    if (at - 1 > start_at) string += text.substring(start_at, at - 1);
-                    next();
-                    if (ch === `u`) {
-                        uffff = 0;
-                        for (i = 0; i < 4; i += 1) {
-                            hex = parseInt(next(), 16);
+                if (p_current_char === `\\`) {
+                    if (p_current_char_index > start_at)
+                        result += p_text.substring(start_at, p_current_char_index);
+                    pNext();
+                    if (p_current_char === `u`) {
+                        let uffff = 0;
+                        for (let i = 0; i < 4; i += 1) {
+                            const hex = parseInt(pNext(), 16);
                             if (!isFinite(hex)) {
                                 break;
                             }
                             uffff = uffff * 16 + hex;
                         }
-                        string += String.fromCharCode(uffff);
-                    } else if (typeof escapee[ch] === `string`) {
-                        string += escapee[ch];
+                        result += String.fromCharCode(uffff);
+                    } else if (typeof ESCAPEE[p_current_char] === `string`) {
+                        result += ESCAPEE[p_current_char];
                     } else {
                         break;
                     }
-                    start_at = at;
+                    start_at = p_current_char_index + 1;
                 }
             }
         }
-        return error(`Bad string`);
+        return pError(`Bad string`);
     };
-    const white = function () {
+    const pSkipWhite = () => {
         // Skip whitespace.
-
-        while (ch && ch <= ` `) {
-            next();
+        while (p_current_char && p_current_char <= ` `) {
+            pNext();
         }
     };
-    const word = function () {
+    const pBooleanOrNull = () => {
         // true, false, or null.
-
-        switch (ch) {
+        switch (p_current_char) {
             case `t`:
-                next(`t`);
-                next(`r`);
-                next(`u`);
-                next(`e`);
+                pNext(`r`);
+                pNext(`u`);
+                pNext(`e`);
+                pNext();
                 return true;
             case `f`:
-                next(`f`);
-                next(`a`);
-                next(`l`);
-                next(`s`);
-                next(`e`);
+                pNext(`a`);
+                pNext(`l`);
+                pNext(`s`);
+                pNext(`e`);
+                pNext();
                 return false;
             case `n`:
-                next(`n`);
-                next(`u`);
-                next(`l`);
-                next(`l`);
+                pNext(`u`);
+                pNext(`l`);
+                pNext(`l`);
+                pNext();
                 return null;
         }
-        return error(`Unexpected '${ch}'`);
+        return pError(`Unexpected '${p_current_char}'`);
     };
-    const array = function () {
+    const pArray = () => {
         // Parse an array value.
 
-        const array: Value[] = [];
+        const result: JsonValue[] = [];
 
-        if (ch === `[`) {
-            next(`[`);
-            white();
-            // @ts-expect-error next() change ch
-            if (ch === `]`) {
-                next(`]`);
-                return array; // empty array
+        if (p_current_char === `[`) {
+            pNext();
+            pSkipWhite();
+            // @ts-expect-error next() change ch.
+            if (p_current_char === `]`) {
+                pNext();
+                return result; // empty array
             }
-            while (ch) {
-                array.push(value());
-                white();
+            while (p_current_char) {
+                result.push(pJsonValue());
+                pSkipWhite();
                 // @ts-expect-error next() change ch
-                if (ch === `]`) {
-                    next(`]`);
-                    return array;
+                if (p_current_char === `]`) {
+                    pNext();
+                    return result;
                 }
-                next(`,`);
-                white();
+                pCurrentCharIs(`,`);
+                pNext();
+                pSkipWhite();
             }
         }
-        return error(`Bad array`);
+        return pError(`Bad array`);
     };
-    const object = function () {
+    const pObject = () => {
         // Parse an object value.
 
-        let key;
-        const object = Object.create(null) as Record<string, unknown>;
+        // TODO: remove null, we want the object to have Object's prototype
+        const result = Object.create(null) as Record<string, unknown>;
 
-        if (ch === `{`) {
-            next(`{`);
-            white();
+        if (p_current_char === `{`) {
+            pNext();
+            pSkipWhite();
             // @ts-expect-error next() change ch
-            if (ch === `}`) {
-                next(`}`);
-                return object; // empty object
+            if (p_current_char === `}`) {
+                pNext();
+                return result; // empty object
             }
-            while (ch) {
-                key = string();
-                white();
-                next(`:`);
-                if (options.strict === true && Object.hasOwnProperty.call(object, key)) {
-                    error(`Duplicate key "${key}"`);
+            while (p_current_char) {
+                const key = pString();
+                pSkipWhite();
+                pCurrentCharIs(`:`);
+                pNext();
+                if (p_options.strict === true && Object.hasOwnProperty.call(result, key)) {
+                    pError(`Duplicate key "${key}"`);
                 }
 
-                if (suspect_proto_rx.test(key) === true) {
-                    if (options.protoAction === `error`) {
-                        error(`Object contains forbidden prototype property`);
-                    } else if (options.protoAction === `ignore`) {
-                        value();
+                if (SUSPECT_PROTO_RX.test(key) === true) {
+                    if (p_options.protoAction === `error`) {
+                        pError(`Object contains forbidden prototype property`);
+                    } else if (p_options.protoAction === `ignore`) {
+                        pJsonValue();
                     } else {
-                        object[key] = value();
+                        result[key] = pJsonValue();
                     }
-                } else if (suspect_constructor_rx.test(key) === true) {
-                    if (options.constructorAction === `error`) {
-                        error(`Object contains forbidden constructor property`);
-                    } else if (options.constructorAction === `ignore`) {
-                        value();
+                } else if (SUSPECT_CONSTRUCTOR_RX.test(key) === true) {
+                    if (p_options.constructorAction === `error`) {
+                        pError(`Object contains forbidden constructor property`);
+                    } else if (p_options.constructorAction === `ignore`) {
+                        pJsonValue();
                     } else {
-                        object[key] = value();
+                        result[key] = pJsonValue();
                     }
                 } else {
-                    object[key] = value();
+                    result[key] = pJsonValue();
                 }
 
-                white();
+                pSkipWhite();
                 // @ts-expect-error next() change ch
-                if (ch === `}`) {
-                    next(`}`);
-                    return object;
+                if (p_current_char === `}`) {
+                    pNext();
+                    return result;
                 }
-                next(`,`);
-                white();
+                pCurrentCharIs(`,`);
+                pNext();
+                pSkipWhite();
             }
         }
-        return error(`Bad object`);
+        return pError(`Bad object`);
     };
-    const value = (): Value => {
+    const pJsonValue = (): JsonValue => {
         // Parse a JSON value. It could be an object, an array, a string, a number,
-        // or a word.
+        // or boolean or null.
 
-        white();
-        switch (ch) {
+        pSkipWhite();
+        switch (p_current_char) {
             case `{`:
-                return object();
+                return pObject();
             case `[`:
-                return array();
+                return pArray();
             case `"`:
-                return string();
+                return pString();
             case `-`:
-                return number();
+                return pNumber();
             default:
-                return ch >= `0` && ch <= `9` ? number() : word();
+                return p_current_char >= `0` && p_current_char <= `9` ? pNumber() : pBooleanOrNull();
         }
     };
 
-    // Return the json_parse function. It will have access to all of the above
-    // functions and variables.
+    // Return the parse function.
+    return (text, reviver) => {
+        // Reset state.
+        p_current_char_index = -1; // next char will begin at 0
+        p_current_char = ` `;
+        p_text = text.toString();
 
-    return function (source, reviver) {
-        text = source + ``;
-        at = 0;
-        ch = ` `;
-        const result = value();
-        white();
-        if (ch) {
-            error(`Syntax error`);
+        const result = pJsonValue();
+        pSkipWhite();
+        if (p_current_char) {
+            pError(`Syntax error`);
         }
 
         // If there is a reviver function, we recursively walk the new structure,
@@ -408,13 +355,12 @@ export const newParse = (user_options?: Options): typeof JSON.parse => {
         // result.
 
         return typeof reviver === `function`
-            ? ((function walk(holder: Record<string, unknown>, key: string) {
-                  let v;
-                  const value = holder[key];
-                  if (value && isObject(value)) {
-                      Object.keys(value).forEach(function (k) {
+            ? ((function walk(object: Record<string, unknown>, key: string) {
+                  const value = object[key];
+                  if (isNonNullObject(value)) {
+                      Object.keys(value).forEach((k) => {
                           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                          v = walk(value, k);
+                          const v = walk(value, k);
                           if (v !== undefined) {
                               value[k] = v;
                           } else {
@@ -423,8 +369,8 @@ export const newParse = (user_options?: Options): typeof JSON.parse => {
                       });
                   }
                   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-                  return reviver.call(holder, key, value);
-              })({ "": result }, ``) as Value)
+                  return reviver.call(object, key, value);
+              })({ "": result }, ``) as JsonValue)
             : result;
     };
 };

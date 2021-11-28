@@ -25,7 +25,7 @@ describe(`Testing native BigInt support: parse`, function () {
 
     it(`Should show JSONbig does support forced parsing to native BigInt`, function (done) {
         const JSONbig = JSB({
-            alwaysParseAsBig: true,
+            alwaysParseAsBigInt: true,
         });
         const obj = JSONbig.parse(input);
         // big int
@@ -69,7 +69,7 @@ describe(`Testing native BigInt support: parse`, function () {
 
     it(`Should show JSONbig does support native Bigint parse/stringify roundtrip when BigInt is forced`, function (done) {
         const JSONbig = JSB({
-            alwaysParseAsBig: true,
+            alwaysParseAsBigInt: true,
         });
         const obj = JSONbig.parse(input);
         const output = JSONbig.stringify(obj);

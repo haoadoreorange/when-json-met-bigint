@@ -61,7 +61,7 @@
         "ts-jest": "^27.0.2",
         "ts-node-dev": "^1.1.6",
         "ttypescript": "^1.5.12",
-        "typescript": "^4.2.4"
+        "typescript": "4.4.4"
     },
     "dependenciesDescription": {
         "@tsconfig/node14": "Recommend tsconfig for node 14",

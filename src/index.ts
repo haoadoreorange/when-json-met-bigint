@@ -2,13 +2,12 @@ process.on(`unhandledRejection`, (reason, promise) => {
     console.error(`Unhandled Rejection at:`, promise, `reason:`, reason);
     process.exit(1);
 });
-import { Options } from "lib";
-import "lib/polyfill";
+import { JsonBigIntOptions } from "lib";
 import { newParse } from "parse";
 import { stringify } from "stringify";
 
 export default Object.assign(
-    (options?: Options) => {
+    (options?: JsonBigIntOptions) => {
         return {
             parse: newParse(options),
             stringify,

@@ -1,29 +1,26 @@
-export function isObject(o: unknown): o is Record<string, unknown> & { toJSON?: () => string } {
-    return typeof o === `object`;
-}
-
-export type Options = {
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const CONSTRUCTOR_ACTIONS = [`error`, `ignore`, `preserve`] as const;
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const PROTO_ACTIONS = [`error`, `ignore`, `preserve`] as const;
+export type JsonBigIntOptions = {
     /**
      * @default false
      */
-    strict?: boolean | undefined;
+    strict?: boolean;
     /**
      * @default false
      */
-    storeAsString?: boolean | undefined;
+    parseBigIntAsString?: boolean;
     /**
      * @default false
      */
-    alwaysParseAsBig?: boolean | undefined;
-    /**
-     * @default false
-     */
+    alwaysParseAsBigInt?: boolean;
     /**
      * @default 'error'
      */
-    protoAction?: `error` | `ignore` | `preserve` | undefined;
+    protoAction?: typeof PROTO_ACTIONS[number];
     /**
      * @default 'error'
      */
-    constructorAction?: `error` | `ignore` | `preserve` | undefined;
+    constructorAction?: typeof CONSTRUCTOR_ACTIONS[number];
 };

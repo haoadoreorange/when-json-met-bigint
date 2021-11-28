@@ -18,7 +18,7 @@ describe(`__proto__ and constructor assignment`, function () {
         expect(() => {
             makeJSON({ protoAction: `invalid value` as `error` });
         }).toThrow(
-            `Incorrect value for protoAction option, must be "error", "ignore" or undefined but passed invalid value`,
+            `Incorrect value for protoAction option, must be error, ignore, preserve but passed invalid value`,
         );
     });
 
@@ -26,7 +26,7 @@ describe(`__proto__ and constructor assignment`, function () {
         expect(() => {
             makeJSON({ constructorAction: `invalid value` as `error` });
         }).toThrow(
-            `Incorrect value for constructorAction option, must be "error", "ignore" or undefined but passed invalid value`,
+            `Incorrect value for constructorAction option, must be error, ignore, preserve but passed invalid value`,
         );
     });
 

@@ -14,7 +14,7 @@ describe(`Testing 'storeAsString' option`, function () {
     });
 
     it(`Should show that key is of type string, when storeAsString option is true`, function (done) {
-        const JSONstring = JSB({ storeAsString: true });
+        const JSONstring = JSB({ parseBigIntAsString: true });
         const result = JSONstring.parse(key);
         expect(typeof result.key).toEqual(`string`);
         done();

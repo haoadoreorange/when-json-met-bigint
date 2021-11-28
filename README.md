@@ -1,15 +1,11 @@
 # another-json-bigint
 
-This is a fork of https://github.com/sidorares/json-bigint, rewritten in TS, no longer use `bignumber.js`, and being actively maintained.
-
-# json-bigint
+This is a fork of [json-bigint](https://github.com/sidorares/json-bigint), rewritten in TS, no longer use `bignumber.js`, and being actively maintained.
 
 [![Build Status](https://secure.travis-ci.org/sidorares/json-bigint.png)](http://travis-ci.org/sidorares/json-bigint)
 [![NPM](https://nodei.co/npm/json-bigint.png?downloads=true&stars=true)](https://nodei.co/npm/json-bigint/)
 
-JSON.parse/stringify with bigints support. Based on Douglas Crockford [JSON.js](https://github.com/douglascrockford/JSON-js) package and [bignumber.js](https://github.com/MikeMcl/bignumber.js) library.
-
-Native `Bigint` was added to JS recently, so we added an option to leverage it instead of `bignumber.js`. However, the parsing with native `BigInt` is kept an option for backward compability.
+JSON.parse/stringify with bigints support. Based on Douglas Crockford [JSON.js](https://github.com/douglascrockford/JSON-js) and [json-bigint](https://github.com/sidorares/json-bigint).
 
 While most JSON parsers assume numeric values have same precision restrictions as IEEE 754 double, JSON specification _does not_ say anything about number precision. Any floating point number in decimal (optionally scientific) notation is valid JSON value. It's a good idea to serialize values which might fall out of IEEE 754 integer precision as strings in your JSON api, but `{ "value" : 9223372036854775807}`, for example, is still a valid RFC4627 JSON string, and in most JS runtimes the result of `JSON.parse` is this object: `{ value: 9223372036854776000 }`
 
@@ -94,9 +90,9 @@ Succesfully catched expected exception on duplicate keys: {"name":"SyntaxError",
 
 ```
 
-#### options.storeAsString, boolean, default false
+#### options.parseBigIntAsString, boolean, default false
 
-Specifies if BigInts should be stored in the object as a string, rather than the default BigNumber.
+Specifies if BigInts should be stored in the object as a string, rather than the default BigInt.
 
 Note that this is a dangerous behavior as it breaks the default functionality of being able to convert back-and-forth without data type changes (as this will convert all BigInts to be-and-stay strings).
 
@@ -104,9 +100,9 @@ example:
 
 ```js
 var JSONbig = require('json-bigint');
-var JSONbigString = require('json-bigint')({ storeAsString: true });
+var JSONbigString = require('json-bigint')({ parseBigIntAsString: true });
 var key = '{ "key": 1234567890123456789 }';
-console.log('\n\nStoring the BigInt as a string, instead of a BigNumber');
+console.log('\n\nStoring the BigInt as a string, instead of a BigInt');
 console.log('Input:', key);
 var withInt = JSONbig.parse(key);
 var withString = JSONbigString.parse(key);
@@ -120,55 +116,25 @@ console.log(
 Output
 
 ```
-Storing the BigInt as a string, instead of a BigNumber
+Storing the BigInt as a string, instead of a BigInt
 Input: { "key": 1234567890123456789 }
 Default type: object, With option type: string
 
 ```
 
-#### options.useNativeBigInt, boolean, default false
+#### options.alwaysParseAsBigInt, boolean, default false
 
-Specifies if parser uses native BigInt instead of bignumber.js
+Specifies if all numbers should be stored as BigInt.
 
-example:
-
-```js
-var JSONbig = require('json-bigint');
-var JSONbigNative = require('json-bigint')({ useNativeBigInt: true });
-var key = '{ "key": 993143214321423154315154321 }';
-console.log(`\n\nStoring the Number as native BigInt, instead of a BigNumber`);
-console.log('Input:', key);
-var normal = JSONbig.parse(key);
-var nativeBigInt = JSONbigNative.parse(key);
-console.log(
-  'Default type: %s, With option type: %s',
-  typeof normal.key,
-  typeof nativeBigInt.key
-);
-```
-
-Output
-
-```
-Storing the Number as native BigInt, instead of a BigNumber
-Input: { "key": 993143214321423154315154321 }
-Default type: object, With option type: bigint
-
-```
-
-#### options.alwaysParseAsBig, boolean, default false
-
-Specifies if all numbers should be stored as BigNumber.
-
-Note that this is a dangerous behavior as it breaks the default functionality of being able to convert back-and-forth without data type changes (as this will convert all Number to be-and-stay BigNumber)
+Note that this is a dangerous behavior as it breaks the default functionality of being able to convert back-and-forth without data type changes (as this will convert all Number to be-and-stay BigInt)
 
 example:
 
 ```js
 var JSONbig = require('json-bigint');
-var JSONbigAlways = require('json-bigint')({ alwaysParseAsBig: true });
-var key = '{ "key": 123 }'; // there is no need for BigNumber by default, but we're forcing it
-console.log(`\n\nStoring the Number as a BigNumber, instead of a Number`);
+var JSONbigAlways = require('json-bigint')({ alwaysParseAsBigInt: true });
+var key = '{ "key": 123 }'; // there is no need for BigInt by default, but we're forcing it
+console.log(`\n\nStoring the Number as a BigInt, instead of a Number`);
 console.log('Input:', key);
 var normal = JSONbig.parse(key);
 var always = JSONbigAlways.parse(key);
@@ -182,20 +148,10 @@ console.log(
 Output
 
 ```
-Storing the Number as a BigNumber, instead of a Number
+Storing the Number as a BigInt, instead of a Number
 Input: { "key": 123 }
-Default type: number, With option type: object
+Default type: number, With option type: bigint
 
-```
-
-If you want to force all numbers to be parsed as native `BigInt`
-(you probably do! Otherwise any calulations become a real headache):
-
-```js
-var JSONbig = require('json-bigint')({
-  alwaysParseAsBig: true,
-  useNativeBigInt: true,
-});
 ```
 
 #### options.protoAction, boolean, default: "error". Possible values: "error", "ignore", "preserve"
