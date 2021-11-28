@@ -8,10 +8,8 @@ import makeJSON from "index";
 describe(`__proto__ and constructor assignment`, function () {
     it(`should set __proto__ property but not a prototype if protoAction is set to preserve`, () => {
         const JSONbig = makeJSON({ protoAction: `preserve` });
-        const obj1 = JSONbig.parse(`{ "__proto__": 1000000000000000 }`);
-        expect(Object.getPrototypeOf(obj1)).toEqual(null);
-        const obj2 = JSONbig.parse(`{ "__proto__": { "admin": true } }`);
-        expect(obj2.admin).not.toEqual(true);
+        const obj = JSONbig.parse(`{ "__proto__": { "admin": true } }`);
+        expect(obj.admin).not.toEqual(true);
     });
 
     it(`should throw an exception if protoAction set to invalid value`, () => {
@@ -38,7 +36,7 @@ describe(`__proto__ and constructor assignment`, function () {
     });
 
     it(`should throw an exception if constructorAction set to error and there is constructor property`, () => {
-        const JSONbig = makeJSON({ protoAction: `error` });
+        const JSONbig = makeJSON({ protoAction: `error`, constructorAction: `error` });
         expect(() => JSONbig.parse(`{ "constructor": 1000000000000000 }`)).toThrow(
             `Object contains forbidden constructor property`,
         );
@@ -49,7 +47,7 @@ describe(`__proto__ and constructor assignment`, function () {
         const obj1 = JSONbig.parse(
             `{ "__proto__": 1000000000000000, "a" : 42, "nested": { "__proto__": false, "b": 43 } }`,
         );
-        expect(Object.getPrototypeOf(obj1)).toEqual(null);
+        expect(Object.getPrototypeOf(obj1)).toEqual(Object.getPrototypeOf({}));
         expect(obj1).toEqual({ a: 42, nested: { b: 43 } });
     });
 

@@ -150,10 +150,8 @@ export const stringify = ((): typeof JSON.stringify => {
                 : ``;
 
         // If there is a replacer, it must be a function or an array.
-        // Otherwise, throw an error.
-        if (replacer && typeof replacer !== `function` && !Array.isArray(replacer))
-            throw new Error(`JSON.stringify`);
-        s_replacer = replacer;
+        if (typeof replacer === `function` || Array.isArray(replacer)) s_replacer = replacer;
+        else replacer = null;
 
         // Make a fake root object containing our value under the key of ''.
         // Return the result of stringifying the value.

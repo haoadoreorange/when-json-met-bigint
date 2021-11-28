@@ -53,8 +53,8 @@ export const newParse = (
         strict: false, // Not being strict means do not generate syntax errors for "duplicate key"
         parseBigIntAsString: false,
         alwaysParseAsBigInt: false, // Toggles whether all numbers should be BigInt
-        protoAction: `error`,
-        constructorAction: `error`,
+        protoAction: `preserve`,
+        constructorAction: `preserve`,
     };
 
     // If there are options, then use them to override the default options.
@@ -154,15 +154,17 @@ export const newParse = (
                 pNext();
             }
         }
-        const result_number = +result_string;
+        const result_number = Number(result_string);
         if (!isFinite(result_number)) {
-            return pError(`Bad number`);
+            return Infinity;
         } else {
-            if (Number.isSafeInteger(result_number))
+            if (Number.isSafeInteger(result_number)) {
+                if (result_number.toString() !== result_string) pError(`Bad number`);
                 return p_options.alwaysParseAsBigInt ||
                     (typeof schema === `function` ? schema(result_string) : schema) === `bigint`
                     ? BigInt(result_number)
                     : result_number;
+            }
             // Number with fractional part should be treated as number(double) including big integers in scientific notation, i.e 1.79e+308
             else
                 return p_options.parseBigIntAsString
@@ -285,8 +287,10 @@ export const newParse = (
     const pObject = (schema?: Schema) => {
         // Parse an object value.
 
-        // TODO: remove null, we want the object to have Object's prototype
-        const result = Object.create(null) as Record<string, unknown>;
+        const result = (p_options.protoAction === `preserve` ? Object.create(null) : {}) as Record<
+            string,
+            unknown
+        >;
 
         if (p_current_char === `{`) {
             pNext();
@@ -330,6 +334,7 @@ export const newParse = (
                 // @ts-expect-error next() change ch
                 if (p_current_char === `}`) {
                     pNext();
+                    if (p_options.protoAction === `preserve`) Object.setPrototypeOf(result, Object.prototype);
                     return result;
                 }
                 pCurrentCharIs(`,`);
@@ -381,9 +386,11 @@ export const newParse = (
             ? ((function walk(object: Record<string, unknown>, key: string) {
                   const value = object[key];
                   if (isNonNullObject(value)) {
-                      Object.keys(value).forEach((k) => {
+                      const removed_keys = {} as Record<string, undefined>;
+                      Object.entries(value).forEach(([k]) => {
                           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                          const v = walk(value, k);
+                          const v = walk({ ...value, ...removed_keys }, k);
+                          removed_keys[k] = undefined;
                           if (v !== undefined) {
                               value[k] = v;
                           } else {

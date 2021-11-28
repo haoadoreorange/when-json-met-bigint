@@ -1,20 +1,22 @@
 # another-json-bigint
 
-This is a fork of [json-bigint](https://github.com/sidorares/json-bigint), rewritten in TS, no longer use `bignumber.js`, and being actively maintained.
+This is a fork of [json-bigint](https://github.com/sidorares/json-bigint), rewritten in TypeScript, no longer use `bignumber.js`, and being actively maintained.
 
 [![Build Status](https://secure.travis-ci.org/sidorares/json-bigint.png)](http://travis-ci.org/sidorares/json-bigint)
 [![NPM](https://nodei.co/npm/json-bigint.png?downloads=true&stars=true)](https://nodei.co/npm/json-bigint/)
 
-JSON.parse/stringify with bigints support. Based on Douglas Crockford [JSON.js](https://github.com/douglascrockford/JSON-js) and [json-bigint](https://github.com/sidorares/json-bigint).
+`JSON.parse/stringify` with `BigInt` support. Based on Douglas Crockford [JSON.js](https://github.com/douglascrockford/JSON-js) and [json-bigint](https://github.com/sidorares/json-bigint).
 
-While most JSON parsers assume numeric values have same precision restrictions as IEEE 754 double, JSON specification _does not_ say anything about number precision. Any floating point number in decimal (optionally scientific) notation is valid JSON value. It's a good idea to serialize values which might fall out of IEEE 754 integer precision as strings in your JSON api, but `{ "value" : 9223372036854775807}`, for example, is still a valid RFC4627 JSON string, and in most JS runtimes the result of `JSON.parse` is this object: `{ value: 9223372036854776000 }`
+While most JSON parsers assume numeric values have same precision restrictions as IEEE 754 double, JSON specification _does not_ say anything about number precision. Any floating point number in decimal (optionally scientific) notation is valid JSON value. 
+
+It's a good idea to serialize values which might fall out of IEEE 754 integer precision as strings in your JSON api, but `{ "value" : 9223372036854775807}`, for example, is still a valid RFC4627 JSON string, and in most JS runtimes the result of `JSON.parse` is this object: `{ value: 9223372036854776000 }`
 
 ==========
 
 example:
 
 ```js
-var JSONbig = require('json-bigint');
+var JSONbig = require('another-json-bigint');
 
 var json = '{ "value" : 9223372036854775807, "v2": 123 }';
 console.log('Input:', json);
@@ -48,20 +50,22 @@ JSONbig.stringify(JSONbig.parse(input)): {"value":9223372036854775807,"v2":123}
 
 ### Options
 
-The behaviour of the parser is somewhat configurable through 'options'
+By default, `another-json-bigint` try its best to be "default JSON API compliant", all custom behaviours are opt-in through options. 
 
-#### options.strict, boolean, default false
+==========
+
+    - options.strict, boolean, default false
 
 Specifies the parsing should be "strict" towards reporting duplicate-keys in the parsed string.
 The default follows what is allowed in standard json and resembles the behavior of JSON.parse, but overwrites any previous values with the last one assigned to the duplicate-key.
 
-Setting options.strict = true will fail-fast on such duplicate-key occurances and thus warn you upfront of possible lost information.
+Setting `options.strict = true` will fail-fast on such duplicate-key occurances and thus warn you upfront of possible lost information.
 
 example:
 
 ```js
-var JSONbig = require('json-bigint');
-var JSONstrict = require('json-bigint')({ strict: true });
+var JSONbig = require('another-json-bigint');
+var JSONstrict = require('another-json-bigint')({ strict: true });
 
 var dupkeys = '{ "dupkey": "value 1", "dupkey": "value 2"}';
 console.log('\n\nDuplicate Key test with both lenient and strict JSON parsing');
@@ -89,18 +93,19 @@ JSON.parse(dupkeys).dupkey: value 2
 Succesfully catched expected exception on duplicate keys: {"name":"SyntaxError","message":"Duplicate key \"dupkey\"","at":33,"text":"{ \"dupkey\": \"value 1\", \"dupkey\": \"value 2\"}"}
 
 ```
+==========
 
-#### options.parseBigIntAsString, boolean, default false
+    - options.parseBigIntAsString, boolean, default false
 
-Specifies if BigInts should be stored in the object as a string, rather than the default BigInt.
+Specifies if `BigInt` should be stored in the object as a `string`, rather than the default `BigInt`.
 
 Note that this is a dangerous behavior as it breaks the default functionality of being able to convert back-and-forth without data type changes (as this will convert all BigInts to be-and-stay strings).
 
 example:
 
 ```js
-var JSONbig = require('json-bigint');
-var JSONbigString = require('json-bigint')({ parseBigIntAsString: true });
+var JSONbig = require('another-json-bigint');
+var JSONbigString = require('another-json-bigint')({ parseBigIntAsString: true });
 var key = '{ "key": 1234567890123456789 }';
 console.log('\n\nStoring the BigInt as a string, instead of a BigInt');
 console.log('Input:', key);
@@ -121,8 +126,9 @@ Input: { "key": 1234567890123456789 }
 Default type: object, With option type: string
 
 ```
+==========
 
-#### options.alwaysParseAsBigInt, boolean, default false
+    - options.alwaysParseAsBigInt, boolean, default false
 
 Specifies if all numbers should be stored as BigInt.
 
@@ -131,8 +137,8 @@ Note that this is a dangerous behavior as it breaks the default functionality of
 example:
 
 ```js
-var JSONbig = require('json-bigint');
-var JSONbigAlways = require('json-bigint')({ alwaysParseAsBigInt: true });
+var JSONbig = require('another-json-bigint');
+var JSONbigAlways = require('another-json-bigint')({ alwaysParseAsBigInt: true });
 var key = '{ "key": 123 }'; // there is no need for BigInt by default, but we're forcing it
 console.log(`\n\nStoring the Number as a BigInt, instead of a Number`);
 console.log('Input:', key);
@@ -153,27 +159,27 @@ Input: { "key": 123 }
 Default type: number, With option type: bigint
 
 ```
+==========
 
-#### options.protoAction, boolean, default: "error". Possible values: "error", "ignore", "preserve"
-
-#### options.constructorAction, boolean, default: "error". Possible values: "error", "ignore", "preserve"
+    - options.protoAction, boolean, default: "preserve". Possible values: "error", "ignore", "preserve"
+    - options.constructorAction, boolean, default: "preserve". Possible values: "error", "ignore", "preserve"
 
 Controls how `__proto__` and `constructor` properties are treated. If set to "error" they are not allowed and
-parse() call will throw an error. If set to "ignore" the prroperty and it;s value is skipped from parsing and object building.
-If set to "preserve" the `__proto__` property is set. One should be extra careful and make sure any other library consuming generated data
-is not vulnerable to prototype poisoning attacks.
+parse() call will throw an error. If set to "ignore" the prroperty and its value is skipped from parsing and object building.
+
+If set to "preserve" the `__proto__` property is set. However, this **DOES NOT** set the prototype because the base object would be created using `Object.create(null)` and `Object.setPrototypeOf` is called upon later, for this particular case only to prevent prototype poisoning. One still should be extra careful and make sure any other library consuming generated data is not vulnerable to prototype poisoning attacks.
 
 example:
 
 ```js
-var JSONbigAlways = require('json-bigint')({ protoAction: 'ignore' });
+var JSONbigAlways = require('another-json-bigint')({ protoAction: 'ignore' });
 const user = JSONbig.parse('{ "__proto__": { "admin": true }, "id": 12345 }');
 // => result is { id: 12345 }
 ```
 
 ### JSONbig.parse(text[, reviver[, schema]])
 
-`JSONbig.parse` support a 3rd option, which is a schema-like object, this is an ad-hoc solution for the limitation `o !== JSONbig.parse(JSONbig.stringify(o))`
+`JSONbig.parse` support a 3rd option, which is a schema-like object. This is an ad-hoc solution for the limitation `o !== JSONbig.parse(JSONbig.stringify(o))`
 
 This limitation exists because JS treats `BigInt` and `Number` as 2 separate types which cannot be cooerced. The parser choses an appropriate type based on the size of the number in JSON string. This introduces 2 problems:
 - As stated above, `JSONbig.parse(JSONbig.stringify(123n))` returns `123` because the number is small enough
@@ -181,18 +187,18 @@ This limitation exists because JS treats `BigInt` and `Number` as 2 separate typ
 
 There's the option to parse all `Number` as `BigInt` but IMHO this isn't much desirable. Libraries solved (2) by iterating the parsed result and enforce the type as you can see [here](https://github.com/theia-ide/tsp-typescript-client/pull/37). That PR has an interesting approach which this solution is inspired from.
 
-In order to solve this, we need an API for users to decide per case & per field level whether it should be `BigInt` or `Number`. This API is exposed through a schema-like object. Its type is defined as following;
+In order to overcome the limitation, we need an API for users to decide per case & per field whether it should be `BigInt` or `Number`. This API is exposed through a schema-like object. Its type is defined as following;
 
 ```typescript
 type BigIntOrNumber = `bigint` | `number`;
-type Schema = BigIntOrNumber | ((n: string) => BigIntOrNumber) | { [key: string]: Schema } | Schema[];
+type Schema = BigIntOrNumber | ((n: string) => BigIntOrNumber) | { [key: string]: Schema } | Schema[] | null;
 ```
 
 To put it simple, the schema-like argument is an object with fields and sub-fields being the fields and sub-fields of the expected parsed object, following the same structure, for which users want to specify whether it is parsed as `BigInt` or `Number`.
 
-Those fields can take 3 different values, a string 'bigint' or 'number' meaning it will be parsed as `BigInt` or `Number`, respectively. The 3rd value it can also take is a callback function `(n: string) => 'bigint' | 'number'`, with `n` being the string of the underlying JSON number. Users for example can use this callback to `throw Error` in case the underlying JSON number is not fitting in a `Number`.
+Those fields can take 3 different values, a string 'bigint' or 'number' meaning it will be parsed as `BigInt` or `Number`, respectively. The 3rd value it can also take is a callback function `(n: string) => 'bigint' | 'number'`, with `n` being the underlying JSON number presented as `string`. Users for example can use this callback to `throw Error` in case the underlying JSON number is not fitting in a `Number`.
 
-For `Array` in the schema-like object, a single item array is treated as `T[]`, that is the item will be the schema for all items in the parsed array. An array with multiple items in the schema-like object will be used as tuple type, that is each of the item with be the schema for the corresponding index item in the parsed array. If `parsed_array.length > schema_array.length`, the parsed array's items which has no corresponding index in the schema array act as having no schema.
+For `Array` in the schema-like object, a single item array is treated as `T[]`, that is the item will be the schema for all items in the parsed array. An array with multiple items in the schema-like object will be used as tuple type, that is each of the item with be the schema for the corresponding index item in the parsed array. If `parsed_array.length > schema_array.length`, the parsed array's items which has no corresponding index in the schema array will be parsed as having no schema.
 
 If a value different from those defined above passed in or returned from the callback, it is as if there is no schema.
 
@@ -215,22 +221,20 @@ JSONbig.parse(`{"a": [1, 2, 3] }`, null, {a: [null, null, `bigint`]}) // returns
 - [What is JavaScript's Max Int? What's the highest Integer value a Number can go to without losing precision?](http://stackoverflow.com/questions/307179/what-is-javascripts-max-int-whats-the-highest-integer-value-a-number-can-go-t)
 - [Large numbers erroneously rounded in Javascript](http://stackoverflow.com/questions/1379934/large-numbers-erroneously-rounded-in-javascript)
 
-### Note on native BigInt support
-
-#### Stringifying
+### Stringifying
 
 Full support out-of-the-box, stringifies BigInts as pure numbers (no quotes, no `n`)
 
-#### Limitations
+### Limitations
 
 - Roundtrip operations
 
 `s === JSONbig.stringify(JSONbig.parse(s))` but
 
-`o !== JSONbig.parse(JSONbig.stringify(o))`
+`o !== JSONbig.parse(JSONbig.stringify(o))` *solved with schema argument*
 
 when `o` has a value with something like `123n`.
 
 `JSONbig` stringify `123n` as `123`, which becomes `number` (aka `123` not `123n`) by default when being reparsed.
 
-There is currently no consistent way to deal with this issue, so we decided to leave it, handling this specific case is then up to users.
+If the schema is not provided, then there is currently no other consistent way to deal with this issue.
