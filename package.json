@@ -3,7 +3,11 @@
     "version": "0.0.0",
     "description": "Forked from json-bigint, rewritten in TS",
     "keywords": [
-        "when-json-met-bigint"
+        "when-json-met-bigint",
+        "json",
+        "bigint",
+        "parse",
+        "stringify"
     ],
     "main": "dist/index.js",
     "types": "dist/index.d.js",

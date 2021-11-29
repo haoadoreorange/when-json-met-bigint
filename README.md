@@ -51,6 +51,46 @@ JSONB.parse(input).value :  9223372036854775807
 JSONB.stringify(JSONB.parse(input)): {"value":9223372036854775807,"v2":123}
 ```
 
+### JSONB.parse(text[, reviver[, schema]])
+
+`JSONB.parse` support a 3rd option, which is a schema-like object. This is an ad-hoc solution for the limitation `o !== JSONB.parse(JSONB.stringify(o))`
+
+This limitation exists because JS treats `BigInt` and `Number` as 2 separate types which cannot be cooerced. The parser choses an appropriate type based on the size of the number in JSON string. This introduces 2 problems:
+- As stated above, `JSONB.parse(JSONB.stringify(123n))` returns `123` because the number is small enough
+- The type of one field is not consistent, for example one API can return a response in which a field can sometimes be `BigInt` and other times be `Number`
+
+There's the option to parse all `Number` as `BigInt` but IMHO this isn't much desirable. Libraries solved (2) by iterating the parsed result and enforce the type as you can see [here](https://github.com/theia-ide/tsp-typescript-client/pull/37). That PR has an interesting approach which this solution is inspired from.
+
+In order to overcome the limitation, we need an API for users to decide per case & per field whether it should be `BigInt` or `Number`. This API is exposed through a schema-like object. Its type is defined as following;
+
+```typescript
+type BigIntOrNumber = `bigint` | `number`;
+type Schema = BigIntOrNumber | ((n: string) => BigIntOrNumber) | { [key: string]: Schema } | Schema[] | null;
+```
+
+To put it simple, the schema-like argument is an object with fields and sub-fields being the fields and sub-fields of the expected parsed object, following the same structure, for which users want to specify whether it is parsed as `BigInt` or `Number`.
+
+Those fields can take 3 different values, a string 'bigint' or 'number' meaning it will be parsed as `BigInt` or `Number`, respectively. The 3rd value it can also take is a callback function `(n: string) => 'bigint' | 'number'`, with `n` being the underlying JSON number presented as `string`. Users for example can use this callback to `throw Error` in case the underlying JSON number is not fitting in a `Number`.
+
+For `Array` in the schema-like object, a single item array is treated as `T[]`, that is the item will be the schema for all items in the parsed array. An array with multiple items in the schema-like object will be used as tuple type, that is each of the item with be the schema for the corresponding index item in the parsed array. If `parsed_array.length > schema_array.length`, the parsed array's items which has no corresponding index in the schema array will be parsed as having no schema.
+
+If a value different from those defined above passed in or returned from the callback, it is as if there is no schema.
+
+example:
+
+```typescript
+JSONB.parse(`{"a": {"b": 123} }`, null, { a: { b: `bigint` } }) // returns {a: {b: 123n} }
+JSONB.parse(`{"a": {"b": 123} }`, null, {a: {b: (n: string) => { if (n === `123`) throw new Error(`cannot be 123`); return `number` } }})
+JSONB.parse(`{"a": [1, 2, 3] }`, null, {a: [`bigint`]}) // returns {a: [1n, 2n, 3n] }
+JSONB.parse(`{"a": [1, 2, 3] }`, null, {a: [`bigint`, `bigint`]}) // returns {a: [1n, 2n, 3] }
+JSONB.parse(`{"a": [1, 2, 3] }`, null, {a: [`bigint`, null]}) // returns {a: [1n, 2, 3] }
+JSONB.parse(`{"a": [1, 2, 3] }`, null, {a: [null, null, `bigint`]}) // returns {a: [1, 2, 3n] }
+```
+
+### JSONB.stringify(value[, replacer[, space]])
+
+Full support out-of-the-box, stringifies `BigInt` as pure numbers (no quotes, no `n`)
+
 ### Options
 
 By default, `when-json-met-bigint` try its best to be "default JSON API compliant", all custom behaviours are opt-in through options. 
@@ -180,42 +220,6 @@ const user = JSONB.parse('{ "__proto__": { "admin": true }, "id": 12345 }');
 // => result is { id: 12345 }
 ```
 
-### JSONB.parse(text[, reviver[, schema]])
-
-`JSONB.parse` support a 3rd option, which is a schema-like object. This is an ad-hoc solution for the limitation `o !== JSONB.parse(JSONB.stringify(o))`
-
-This limitation exists because JS treats `BigInt` and `Number` as 2 separate types which cannot be cooerced. The parser choses an appropriate type based on the size of the number in JSON string. This introduces 2 problems:
-- As stated above, `JSONB.parse(JSONB.stringify(123n))` returns `123` because the number is small enough
-- The type of one field is not consistent, for example one API can return a response in which a field can sometimes be `BigInt` and other times be `Number`
-
-There's the option to parse all `Number` as `BigInt` but IMHO this isn't much desirable. Libraries solved (2) by iterating the parsed result and enforce the type as you can see [here](https://github.com/theia-ide/tsp-typescript-client/pull/37). That PR has an interesting approach which this solution is inspired from.
-
-In order to overcome the limitation, we need an API for users to decide per case & per field whether it should be `BigInt` or `Number`. This API is exposed through a schema-like object. Its type is defined as following;
-
-```typescript
-type BigIntOrNumber = `bigint` | `number`;
-type Schema = BigIntOrNumber | ((n: string) => BigIntOrNumber) | { [key: string]: Schema } | Schema[] | null;
-```
-
-To put it simple, the schema-like argument is an object with fields and sub-fields being the fields and sub-fields of the expected parsed object, following the same structure, for which users want to specify whether it is parsed as `BigInt` or `Number`.
-
-Those fields can take 3 different values, a string 'bigint' or 'number' meaning it will be parsed as `BigInt` or `Number`, respectively. The 3rd value it can also take is a callback function `(n: string) => 'bigint' | 'number'`, with `n` being the underlying JSON number presented as `string`. Users for example can use this callback to `throw Error` in case the underlying JSON number is not fitting in a `Number`.
-
-For `Array` in the schema-like object, a single item array is treated as `T[]`, that is the item will be the schema for all items in the parsed array. An array with multiple items in the schema-like object will be used as tuple type, that is each of the item with be the schema for the corresponding index item in the parsed array. If `parsed_array.length > schema_array.length`, the parsed array's items which has no corresponding index in the schema array will be parsed as having no schema.
-
-If a value different from those defined above passed in or returned from the callback, it is as if there is no schema.
-
-example:
-
-```typescript
-JSONB.parse(`{"a": {"b": 123} }`, null, { a: { b: `bigint` } }) // returns {a: {b: 123n} }
-JSONB.parse(`{"a": {"b": 123} }`, null, {a: {b: (n: string) => { if (n === `123`) throw new Error(`cannot be 123`); return `number` } }})
-JSONB.parse(`{"a": [1, 2, 3] }`, null, {a: [`bigint`]}) // returns {a: [1n, 2n, 3n] }
-JSONB.parse(`{"a": [1, 2, 3] }`, null, {a: [`bigint`, `bigint`]}) // returns {a: [1n, 2n, 3] }
-JSONB.parse(`{"a": [1, 2, 3] }`, null, {a: [`bigint`, null]}) // returns {a: [1n, 2, 3] }
-JSONB.parse(`{"a": [1, 2, 3] }`, null, {a: [null, null, `bigint`]}) // returns {a: [1, 2, 3n] }
-```
-
 ### Links:
 
 - [RFC4627: The application/json Media Type for JavaScript Object Notation (JSON)](http://www.ietf.org/rfc/rfc4627.txt)
@@ -223,10 +227,6 @@ JSONB.parse(`{"a": [1, 2, 3] }`, null, {a: [null, null, `bigint`]}) // returns {
 - [Is there any proper way to parse JSON with large numbers? (long, bigint, int64)](http://stackoverflow.com/questions/18755125/node-js-is-there-any-proper-way-to-parse-json-with-large-numbers-long-bigint)
 - [What is JavaScript's Max Int? What's the highest Integer value a Number can go to without losing precision?](http://stackoverflow.com/questions/307179/what-is-javascripts-max-int-whats-the-highest-integer-value-a-number-can-go-t)
 - [Large numbers erroneously rounded in Javascript](http://stackoverflow.com/questions/1379934/large-numbers-erroneously-rounded-in-javascript)
-
-### Stringifying
-
-Full support out-of-the-box, stringifies BigInts as pure numbers (no quotes, no `n`)
 
 ### Limitations
 
@@ -244,7 +244,7 @@ If the schema is not provided, then there is currently no other consistent way t
 
 ### Benchmark
 
-`when-json-met-bigint.stringify` vs `JSON.stringify` + regex to produce big number in JSON
+`JSONB.stringify` vs `JSON.stringify` + regex to produce big number in JSON string
 
 ***
  100 iterations average exec time stringify o1 (small array contains BigInt): JSON = 11.874186600559902 x JSONB 

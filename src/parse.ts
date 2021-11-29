@@ -121,169 +121,13 @@ export const newParse = (
         if (c) pCurrentCharIs(c);
         return p_current_char;
     };
-    const pNumber = (schema?: Schema) => {
-        // Parse a number value.
-        schema = schema === `bigint` || schema === `number` || typeof schema === `function` ? schema : null;
-
-        let result_string = ``;
-
-        if (p_current_char === `-`) {
-            result_string = p_current_char;
-            pNext();
-        }
-        while (p_current_char >= `0` && p_current_char <= `9`) {
-            result_string += p_current_char;
-            pNext();
-        }
-        if (p_current_char === `.`) {
-            result_string += p_current_char;
-            while (pNext() && p_current_char >= `0` && p_current_char <= `9`) {
-                result_string += p_current_char;
-            }
-        }
-        if (p_current_char === `e` || p_current_char === `E`) {
-            result_string += p_current_char;
-            pNext();
-            // @ts-expect-error next() change ch
-            if (p_current_char === `-` || p_current_char === `+`) {
-                result_string += p_current_char;
-                pNext();
-            }
-            while (p_current_char >= `0` && p_current_char <= `9`) {
-                result_string += p_current_char;
-                pNext();
-            }
-        }
-        const result_number = Number(result_string);
-        if (!isFinite(result_number)) {
-            return Infinity;
-        } else {
-            if (Number.isSafeInteger(result_number)) {
-                if (result_number.toString() !== result_string) pError(`Bad number`);
-                return p_options.alwaysParseAsBigInt ||
-                    (typeof schema === `function` ? schema(result_string) : schema) === `bigint`
-                    ? BigInt(result_number)
-                    : result_number;
-            }
-            // Number with fractional part should be treated as number(double) including big integers in scientific notation, i.e 1.79e+308
-            else
-                return p_options.parseBigIntAsString
-                    ? result_string
-                    : /[.eE]/.test(result_string) ||
-                      (typeof schema === `function` ? schema(result_string) : schema) === `number`
-                    ? result_number
-                    : BigInt(result_string);
-        }
-    };
-
-    const pString = () => {
-        // Parse a string value.
-
-        let result = ``;
-
-        // When parsing for string values, we must look for " and \ characters.
-
-        if (p_current_char === `"`) {
-            let start_at = p_current_char_index + 1;
-            while (pNext()) {
-                if (p_current_char === `"`) {
-                    if (p_current_char_index > start_at)
-                        result += p_text.substring(start_at, p_current_char_index);
-                    pNext();
-                    return result;
-                }
-                if (p_current_char === `\\`) {
-                    if (p_current_char_index > start_at)
-                        result += p_text.substring(start_at, p_current_char_index);
-                    pNext();
-                    if (p_current_char === `u`) {
-                        let uffff = 0;
-                        for (let i = 0; i < 4; i += 1) {
-                            const hex = parseInt(pNext(), 16);
-                            if (!isFinite(hex)) {
-                                break;
-                            }
-                            uffff = uffff * 16 + hex;
-                        }
-                        result += String.fromCharCode(uffff);
-                    } else if (typeof ESCAPEE[p_current_char] === `string`) {
-                        result += ESCAPEE[p_current_char];
-                    } else {
-                        break;
-                    }
-                    start_at = p_current_char_index + 1;
-                }
-            }
-        }
-        return pError(`Bad string`);
-    };
     const pSkipWhite = () => {
         // Skip whitespace.
         while (p_current_char && p_current_char <= ` `) {
             pNext();
         }
     };
-    const pBooleanOrNull = () => {
-        // true, false, or null.
-        switch (p_current_char) {
-            case `t`:
-                pNext(`r`);
-                pNext(`u`);
-                pNext(`e`);
-                pNext();
-                return true;
-            case `f`:
-                pNext(`a`);
-                pNext(`l`);
-                pNext(`s`);
-                pNext(`e`);
-                pNext();
-                return false;
-            case `n`:
-                pNext(`u`);
-                pNext(`l`);
-                pNext(`l`);
-                pNext();
-                return null;
-        }
-        return pError(`Unexpected '${p_current_char}'`);
-    };
-    const pArray = (schema?: Schema) => {
-        // Parse an array value.
 
-        const result: JsonValue[] = [];
-
-        if (p_current_char === `[`) {
-            pNext();
-            pSkipWhite();
-            // @ts-expect-error next() change ch.
-            if (p_current_char === `]`) {
-                pNext();
-                return result; // empty array
-            }
-            while (p_current_char) {
-                result.push(
-                    pJsonValue(
-                        Array.isArray(schema)
-                            ? schema.length > 1
-                                ? schema[result.length]
-                                : schema[0]
-                            : null,
-                    ),
-                );
-                pSkipWhite();
-                // @ts-expect-error next() change ch
-                if (p_current_char === `]`) {
-                    pNext();
-                    return result;
-                }
-                pCurrentCharIs(`,`);
-                pNext();
-                pSkipWhite();
-            }
-        }
-        return pError(`Bad array`);
-    };
     const pObject = (schema?: Schema) => {
         // Parse an object value.
 
@@ -344,6 +188,167 @@ export const newParse = (
         }
         return pError(`Bad object`);
     };
+
+    const pArray = (schema?: Schema) => {
+        // Parse an array value.
+
+        const result: JsonValue[] = [];
+
+        if (p_current_char === `[`) {
+            pNext();
+            pSkipWhite();
+            // @ts-expect-error next() change ch.
+            if (p_current_char === `]`) {
+                pNext();
+                return result; // empty array
+            }
+            while (p_current_char) {
+                result.push(
+                    pJsonValue(
+                        Array.isArray(schema)
+                            ? schema.length > 1
+                                ? schema[result.length]
+                                : schema[0]
+                            : null,
+                    ),
+                );
+                pSkipWhite();
+                // @ts-expect-error next() change ch
+                if (p_current_char === `]`) {
+                    pNext();
+                    return result;
+                }
+                pCurrentCharIs(`,`);
+                pNext();
+                pSkipWhite();
+            }
+        }
+        return pError(`Bad array`);
+    };
+
+    const pString = () => {
+        // Parse a string value.
+
+        let result = ``;
+
+        // When parsing for string values, we must look for " and \ characters.
+
+        if (p_current_char === `"`) {
+            let start_at = p_current_char_index + 1;
+            while (pNext()) {
+                if (p_current_char === `"`) {
+                    if (p_current_char_index > start_at)
+                        result += p_text.substring(start_at, p_current_char_index);
+                    pNext();
+                    return result;
+                }
+                if (p_current_char === `\\`) {
+                    if (p_current_char_index > start_at)
+                        result += p_text.substring(start_at, p_current_char_index);
+                    pNext();
+                    if (p_current_char === `u`) {
+                        let uffff = 0;
+                        for (let i = 0; i < 4; i += 1) {
+                            const hex = parseInt(pNext(), 16);
+                            if (!isFinite(hex)) {
+                                break;
+                            }
+                            uffff = uffff * 16 + hex;
+                        }
+                        result += String.fromCharCode(uffff);
+                    } else if (typeof ESCAPEE[p_current_char] === `string`) {
+                        result += ESCAPEE[p_current_char];
+                    } else {
+                        break;
+                    }
+                    start_at = p_current_char_index + 1;
+                }
+            }
+        }
+        return pError(`Bad string`);
+    };
+
+    const pNumber = (schema?: Schema) => {
+        // Parse a number value.
+        schema = schema === `bigint` || schema === `number` || typeof schema === `function` ? schema : null;
+
+        let result_string = ``;
+
+        if (p_current_char === `-`) {
+            result_string = p_current_char;
+            pNext();
+        }
+        while (p_current_char >= `0` && p_current_char <= `9`) {
+            result_string += p_current_char;
+            pNext();
+        }
+        if (p_current_char === `.`) {
+            result_string += p_current_char;
+            while (pNext() && p_current_char >= `0` && p_current_char <= `9`) {
+                result_string += p_current_char;
+            }
+        }
+        if (p_current_char === `e` || p_current_char === `E`) {
+            result_string += p_current_char;
+            pNext();
+            // @ts-expect-error next() change ch
+            if (p_current_char === `-` || p_current_char === `+`) {
+                result_string += p_current_char;
+                pNext();
+            }
+            while (p_current_char >= `0` && p_current_char <= `9`) {
+                result_string += p_current_char;
+                pNext();
+            }
+        }
+        const result_number = Number(result_string);
+        if (!isFinite(result_number)) {
+            return Infinity;
+        } else {
+            if (Number.isSafeInteger(result_number)) {
+                if (result_number.toString() !== result_string) pError(`Bad number`);
+                return p_options.alwaysParseAsBigInt ||
+                    (typeof schema === `function` ? schema(result_string) : schema) === `bigint`
+                    ? BigInt(result_number)
+                    : result_number;
+            }
+            // Number with fractional part should be treated as number(double) including big integers in scientific notation, i.e 1.79e+308
+            else
+                return p_options.parseBigIntAsString
+                    ? result_string
+                    : /[.eE]/.test(result_string) ||
+                      (typeof schema === `function` ? schema(result_string) : schema) === `number`
+                    ? result_number
+                    : BigInt(result_string);
+        }
+    };
+
+    const pBooleanOrNull = () => {
+        // true, false, or null.
+        switch (p_current_char) {
+            case `t`:
+                pNext(`r`);
+                pNext(`u`);
+                pNext(`e`);
+                pNext();
+                return true;
+            case `f`:
+                pNext(`a`);
+                pNext(`l`);
+                pNext(`s`);
+                pNext(`e`);
+                pNext();
+                return false;
+            case `n`:
+                pNext(`u`);
+                pNext(`l`);
+                pNext(`l`);
+                pNext();
+                return null;
+        }
+        return pError(`Unexpected '${p_current_char}'`);
+    };
+
     const pJsonValue = (schema?: Schema): JsonValue => {
         // Parse a JSON value. It could be an object, an array, a string, a number,
         // or boolean or null.
