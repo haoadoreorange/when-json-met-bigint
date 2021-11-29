@@ -1,14 +1,15 @@
 {
-    "name": "another-json-bigint",
+    "name": "when-json-met-bigint",
     "version": "0.0.0",
     "description": "Forked from json-bigint, rewritten in TS",
     "keywords": [
-        "another-json-bigint"
+        "when-json-met-bigint"
     ],
     "main": "dist/index.js",
-    "bin": "dist/index.js",
+    "types": "dist/index.d.js",
+    "typings": "dist/index.d.js",
     "license": "MIT",
-    "repository": "https://github.com/haoadoresorange",
+    "repository": "https://github.com/haoadoresorange/when-json-met-bigint",
     "author": "haoadoresorange",
     "files": [
         "dist",
@@ -69,6 +70,9 @@
         "eslint-config-prettier": "Turn off ESLint rules that conflict with Prettier",
         "eslint-plugin-prettier": "Run Prettier as ESLint rule (no need to run prettier command) and show errors as ESLint errors",
         "ts-jest": "Run Jest directly on TS",
-        "ts-node-dev": "Node dev server for TS"
+        "ts-node-dev": "Node dev server for TS",
+        "@zerollup/ts-transform-paths": "Convert import path to relative in compiled files",
+        "ttypescript": "Required for ts-transform-paths",
+        "pinst": "Workaround husky 'npm postinstall' problem when 'npm publish'"
     }
 }

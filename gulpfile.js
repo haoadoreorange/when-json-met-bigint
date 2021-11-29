@@ -20,5 +20,7 @@ exports.default = () => {
             }),
         )
         .pipe(tsProject());
-    return compiled_src.pipe(sourcemaps.write(`.`, { includeContent: false })).pipe(gulp.dest(`dist`));
+    return compiled_src
+        .pipe(sourcemaps.write(`.`, { includeContent: false, sourceRoot: `./` }))
+        .pipe(gulp.dest(`dist`));
 };

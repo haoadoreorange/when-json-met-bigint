@@ -2,7 +2,7 @@
     "extends": "@tsconfig/node14/tsconfig.json",
     "compilerOptions": {
         "outDir": "dist/" /* Redirect output structure to the directory. */,
-        "lib": ["ES2020", "ES2021.String"],
+        "lib": ["ES2020"],
         "baseUrl": "src/" /* Base directory to resolve non-absolute module names. */,
         "plugins": [{ "transform": "@zerollup/ts-transform-paths" }]
     }

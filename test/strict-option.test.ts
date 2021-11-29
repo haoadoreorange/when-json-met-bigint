@@ -7,10 +7,10 @@ import JSB from "index";
 describe(`Testing 'strict' option`, function () {
     const dupkeys = `{ "dupkey": "value 1", "dupkey": "value 2"}`;
     it(`Should show that duplicate keys just get overwritten by default`, function (done) {
-        const JSONbig = JSB;
+        const JSONB = JSB;
         let result: any = `before`;
         function tryParse() {
-            result = JSONbig.parse(dupkeys);
+            result = JSONB.parse(dupkeys);
         }
         expect(tryParse).not.toThrow(`anything`);
         expect(result.dupkey).toEqual(`value 2`);

@@ -7,8 +7,8 @@ import JSB from "index";
 describe(`Testing 'storeAsString' option`, function () {
     const key = `{ "key": 12345678901234567 }`;
     it(`Should show that the key is of type bigint`, function (done) {
-        const JSONbig = JSB;
-        const result = JSONbig.parse(key);
+        const JSONB = JSB;
+        const result = JSONB.parse(key);
         expect(typeof result.key).toEqual(`bigint`);
         done();
     });

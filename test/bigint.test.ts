@@ -19,9 +19,9 @@ describe(`Testing bigint support`, function () {
         done();
     });
 
-    it(`Should show JSONbig does support bigint parse/stringify roundtrip`, function (done) {
-        const JSONbig = JSB;
-        const obj = JSONbig.parse(input);
+    it(`Should show JSONB does support bigint parse/stringify roundtrip`, function (done) {
+        const JSONB = JSB;
+        const obj = JSONB.parse(input);
         // string from small int
         expect(obj.small.toString()).toEqual(`123`);
         // string from big int
@@ -29,7 +29,7 @@ describe(`Testing bigint support`, function () {
         // instanceof big int
         expect(typeof obj.big).toEqual(`bigint`);
 
-        const output = JSONbig.stringify(obj);
+        const output = JSONB.stringify(obj);
         expect(output).toEqual(input);
         done();
     });

@@ -9,8 +9,8 @@ describe(`Testing native BigInt support: stringify`, function () {
         console.log(`No native BigInt`);
         return;
     }
-    it(`Should show JSONbig can stringify native BigInt`, function (done) {
-        const JSONbig = JSB;
+    it(`Should show JSONB can stringify native BigInt`, function (done) {
+        const JSONB = JSB;
         const obj = {
             // We cannot use n-literals - otherwise older NodeJS versions fail on this test
             big: eval(`123456789012345678901234567890n`),
@@ -25,7 +25,7 @@ describe(`Testing native BigInt support: stringify`, function () {
         // typeof big int
         expect(typeof obj.big).toEqual(`bigint`);
 
-        const output = JSONbig.stringify(obj);
+        const output = JSONB.stringify(obj);
         expect(output).toEqual(
             `{` +
                 `"big":123456789012345678901234567890,` +
