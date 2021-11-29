@@ -241,3 +241,19 @@ when `o` has a value with something like `123n`.
 `JSONB` stringify `123n` as `123`, which becomes `number` (aka `123` not `123n`) by default when being reparsed.
 
 If the schema is not provided, then there is currently no other consistent way to deal with this issue.
+
+### Benchmark
+
+`when-json-met-bigint.stringify` vs `JSON.stringify` + regex to produce big number in JSON
+
+***
+ 100 iterations average exec time stringify o1 (small array contains BigInt): JSON = 11.874186600559902 x JSONB 
+***
+
+***
+ 100 iterations average exec time stringify o2 (big array no BigInt): JSON = 1.1497732753246823 x JSONB 
+***
+
+***
+ 100 iterations average exec time stringify o3 (big array contains BigInt): JSON = 16.440793281801323 x JSONB 
+***

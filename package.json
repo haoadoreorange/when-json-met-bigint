@@ -17,15 +17,19 @@
     ],
     "scripts": {
         "postinstall": "husky install",
-        "pump-version": "yarn version --no-commit-hooks",
+        "bump-version": "yarn version --no-commit-hooks",
         "prepack": "pinst --disable && yarn build",
         "postpack": "pinst --enable",
-        "build": "rimraf dist && gulp",
+        "compile": "rimraf dist && gulp",
+        "build": "yarn compile && rimraf dist/benchmark*",
         "start": "NODE_ENV=production node dist/index.js",
         "dev": "NODE_PATH=src ts-node-dev src/index.ts",
         "lint": "eslint '**/*.{js,ts}' --quiet --fix",
         "lint-staged": "lint-staged",
-        "test": "jest"
+        "test": "jest",
+        "semver": "yarn dev --upgrade && yarn upgrade && syncyarnlock -sk && yarn",
+        "latest": "yarn dev --upgrade && yarn upgrade -L && syncyarnlock -sk && yarn",
+        "benchmark": "yarn compile && node dist/benchmark.js && rimraf dist/benchmark*"
     },
     "lint-staged": {
         "*.{js,ts}": [
