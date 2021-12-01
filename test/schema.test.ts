@@ -12,13 +12,13 @@ describe(`Testing parser schema`, function () {
         expect(() => {
             JSONB.parse(`{"a": {"b": 123} }`, null, {
                 a: {
-                    b: (n: string) => {
-                        if (n === `123`) throw new Error(`cannot be 123`);
-                        return `number`;
+                    b: (n) => {
+                        if (typeof n === `number`) throw new Error(`Expect bigint but found ${n}`);
+                        return `bigint`;
                     },
                 },
             });
-        }).toThrow(`cannot be 123`);
+        }).toThrow(`Expect bigint but found 123`);
 
         const o = JSONB.parse(`{"a": [1, 2, 3] }`, null, { a: [`bigint`] });
         expect(typeof o.a[0]).toEqual(`bigint`);

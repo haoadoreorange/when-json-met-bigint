@@ -64,13 +64,13 @@ There's the option to parse all `Number` as `BigInt` but IMHO this isn't much de
 In order to overcome the limitation, we need an API for users to decide per case & per field whether it should be `BigInt` or `Number`. This API is exposed through a schema-like object. Its type is defined as following;
 
 ```typescript
-type BigIntOrNumber = `bigint` | `number`;
-type Schema = BigIntOrNumber | ((n: string) => BigIntOrNumber) | { [key: string]: Schema } | Schema[] | null;
+type NumberOrBigInt = `number` | `bigint`;
+type Schema = NumberOrBigInt | ((n: number | bigint) => NumberOrBigInt) | { [key: string]: Schema } | Schema[] | null;
 ```
 
-To put it simple, the schema-like argument is an object with fields and sub-fields being the fields and sub-fields of the expected parsed object, following the same structure, for which users want to specify whether it is parsed as `BigInt` or `Number`.
+To put it simple, the schema-like argument is an object with fields and sub-fields being the fields and sub-fields of the expected parsed object, following the same structure, for which users want to specify whether to force it as `BigInt` or `Number`.
 
-Those fields can take 3 different values, a string 'bigint' or 'number' meaning it will be parsed as `BigInt` or `Number`, respectively. The 3rd value it can also take is a callback function `(n: string) => 'bigint' | 'number'`, with `n` being the underlying JSON number presented as `string`. Users for example can use this callback to `throw Error` in case the underlying JSON number is not fitting in a `Number`.
+Those fields can take 3 different values, a string 'number' or 'bigint' meaning it will be parsed as `Number` or `BigInt`, respectively. The 3rd possible value is a callback function `(n: number | bigint) => 'number' | 'bigint'`, with `n` being either `number` or `bigint` as being parsed by default depending on the size. Users for example can use this callback to `throw Error` in case the type is not what they're expecting.
 
 For `Array` in the schema-like object, a single item array is treated as `T[]`, that is the item will be the schema for all items in the parsed array. An array with multiple items in the schema-like object will be used as tuple type, that is each of the item with be the schema for the corresponding index item in the parsed array. If `parsed_array.length > schema_array.length`, the parsed array's items which has no corresponding index in the schema array will be parsed as having no schema.
 
@@ -80,7 +80,7 @@ example:
 
 ```typescript
 JSONB.parse(`{"a": {"b": 123} }`, null, { a: { b: `bigint` } }) // returns {a: {b: 123n} }
-JSONB.parse(`{"a": {"b": 123} }`, null, {a: {b: (n: string) => { if (n === `123`) throw new Error(`cannot be 123`); return `number` } }})
+JSONB.parse(`{"a": {"b": 123} }`, null, {a: {b: (n) => { if (typeof n === `number`) throw new Error(`Expect bigint but found ${n}`); return `bigint` } }})
 JSONB.parse(`{"a": [1, 2, 3] }`, null, {a: [`bigint`]}) // returns {a: [1n, 2n, 3n] }
 JSONB.parse(`{"a": [1, 2, 3] }`, null, {a: [`bigint`, `bigint`]}) // returns {a: [1n, 2n, 3] }
 JSONB.parse(`{"a": [1, 2, 3] }`, null, {a: [`bigint`, null]}) // returns {a: [1n, 2, 3] }

@@ -137,7 +137,7 @@ module.exports = {
                 selector: VARIABLE,
                 types: func,
                 modifiers: [`destructured`],
-                format: [...snake_case, ...camelCase, ...PascalCase],
+                format: [...camelCase, ...PascalCase],
             },
             {
                 selector: METHOD,

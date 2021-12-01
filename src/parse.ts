@@ -26,8 +26,13 @@ const ESCAPEE = {
     t: `\t`,
 } as const;
 
-type BigIntOrNumber = `bigint` | `number`;
-type Schema = BigIntOrNumber | ((n: string) => BigIntOrNumber) | { [key: string]: Schema } | Schema[] | null;
+type NumberOrBigInt = `number` | `bigint`;
+type Schema =
+    | NumberOrBigInt
+    | ((n: number | bigint) => NumberOrBigInt)
+    | { [key: string]: Schema }
+    | Schema[]
+    | null;
 
 type JsonValue = Record<string, unknown> | unknown[] | string | number | bigint | boolean | null;
 // Closure for internal state variables.
@@ -77,9 +82,9 @@ export const newParse = (
                 throw new Error(
                     // This case is possible in JS but not TS (hence type never).
                     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-                    `Incorrect value for protoAction option, must be ${PROTO_ACTIONS.join(`, `)} but passed ${
-                        p_user_options.protoAction
-                    }`,
+                    `Incorrect value for protoAction option, must be ${PROTO_ACTIONS.map(
+                        (a) => `"${a}"`,
+                    ).join(` or `)} but passed ${p_user_options.protoAction}`,
                 );
             }
         }
@@ -90,9 +95,9 @@ export const newParse = (
                 throw new Error(
                     // This case is possible in JS but not TS (hence type never).
                     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-                    `Incorrect value for constructorAction option, must be ${CONSTRUCTOR_ACTIONS.join(
-                        `, `,
-                    )} but passed ${p_user_options.constructorAction}`,
+                    `Incorrect value for constructorAction option, must be ${CONSTRUCTOR_ACTIONS.map(
+                        (a) => `"${a}"`,
+                    ).join(` or `)} but passed ${p_user_options.constructorAction}`,
                 );
             }
         }
@@ -308,18 +313,25 @@ export const newParse = (
             if (Number.isSafeInteger(result_number)) {
                 if (result_number.toString() !== result_string) pError(`Bad number`);
                 return p_options.alwaysParseAsBigInt ||
-                    (typeof schema === `function` ? schema(result_string) : schema) === `bigint`
+                    (typeof schema === `function` ? schema(result_number) : schema) === `bigint`
                     ? BigInt(result_number)
                     : result_number;
             }
             // Number with fractional part should be treated as number(double) including big integers in scientific notation, i.e 1.79e+308
-            else
-                return p_options.parseBigIntAsString
-                    ? result_string
-                    : /[.eE]/.test(result_string) ||
-                      (typeof schema === `function` ? schema(result_string) : schema) === `number`
-                    ? result_number
-                    : BigInt(result_string);
+            else {
+                if (p_options.parseBigIntAsString) {
+                    return result_string;
+                } else {
+                    let result_bigint;
+                    if (typeof schema === `function`) {
+                        result_bigint = BigInt(result_string);
+                        schema = schema(result_bigint);
+                    }
+                    return /[.eE]/.test(result_string) || schema === `number`
+                        ? result_number
+                        : result_bigint || BigInt(result_string);
+                }
+            }
         }
     };
 

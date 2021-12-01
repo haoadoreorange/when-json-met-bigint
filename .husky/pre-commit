@@ -1,4 +1,32 @@
 #!/bin/sh
+
+if [ -f ".sig" ]; then
+    RED='\033[0;31m'
+    NC='\033[0m' # No Color
+    . "$(pwd)"/.sig
+    if [ -n "${name-}" ] && [ "$GIT_AUTHOR_NAME" != "$name" ]; then
+        wrong_name=true
+        wrong=true
+    fi
+    if [ -n "${email-}" ] && [ "$GIT_AUTHOR_EMAIL" != "$email" ]; then
+        wrong_email=true
+        wrong=true
+    fi
+    if [ "${wrong-}" = "true" ]; then
+        if [ "${wrong_name-}" = "true" ]; then
+            echo "${RED}Required author name for this repo: ${name}${NC}"
+        fi
+        if [ "${wrong_email-}" = "true" ]; then
+            echo "${RED}Required author email for this repo: ${email}${NC}"
+        fi
+        git config --global user.name "$name" &&
+            git config --global user.email "$email" &&
+            echo "${RED}Configured git signature accordingly, please re-commit${NC}"
+        exit 1
+    fi
+fi
+
+#!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
 yarn lint-staged

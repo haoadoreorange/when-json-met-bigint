@@ -67,6 +67,7 @@
         "pinst": "^2.1.6",
         "prettier": "^2.2.1",
         "rimraf": "^3.0.2",
+        "syncyarnlock": "^1.0.19",
         "ts-jest": "^27.0.2",
         "ts-node-dev": "^1.1.6",
         "ttypescript": "^1.5.12",
@@ -81,6 +82,7 @@
         "ts-node-dev": "Node dev server for TS",
         "@zerollup/ts-transform-paths": "Convert import path to relative in compiled files",
         "ttypescript": "Required for ts-transform-paths",
-        "pinst": "Workaround husky 'npm postinstall' problem when 'npm publish'"
+        "pinst": "Workaround husky 'npm postinstall' problem when 'npm publish'",
+        "syncyarnlock": "Sync yarn.lock to package.json after 'yarn upgrade'"
     }
 }

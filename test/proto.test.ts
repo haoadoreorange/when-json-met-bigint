@@ -16,7 +16,7 @@ describe(`__proto__ and constructor assignment`, function () {
         expect(() => {
             JSB({ protoAction: `invalid value` as `error` });
         }).toThrow(
-            `Incorrect value for protoAction option, must be error, ignore, preserve but passed invalid value`,
+            `Incorrect value for protoAction option, must be "error" or "ignore" or "preserve" but passed invalid value`,
         );
     });
 
@@ -24,7 +24,7 @@ describe(`__proto__ and constructor assignment`, function () {
         expect(() => {
             JSB({ constructorAction: `invalid value` as `error` });
         }).toThrow(
-            `Incorrect value for constructorAction option, must be error, ignore, preserve but passed invalid value`,
+            `Incorrect value for constructorAction option, must be "error" or "ignore" or "preserve" but passed invalid value`,
         );
     });
 
