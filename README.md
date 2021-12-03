@@ -220,6 +220,12 @@ const user = JSONB.parse('{ "__proto__": { "admin": true }, "id": 12345 }');
 // => result is { id: 12345 }
 ```
 
+### TODO:
+
+- Align error message with default `JSON`
+- Update benchmark
+- Add turbo mode
+
 ### Links:
 
 - [RFC4627: The application/json Media Type for JavaScript Object Notation (JSON)](http://www.ietf.org/rfc/rfc4627.txt)
@@ -247,13 +253,13 @@ If the schema is not provided, then there is currently no other consistent way t
 `JSONB.stringify` vs `JSON.stringify` + regex to produce big number in JSON string
 
 ***
- 100 iterations average exec time stringify o1 (small array contains BigInt): JSON = 11.874186600559902 x JSONB 
+ 100 iterations average exec time stringify o1 (small array contains BigInt): JSON = 0.9074120484187915 x JSONB 
 ***
 
 ***
- 100 iterations average exec time stringify o2 (big array no BigInt): JSON = 1.1497732753246823 x JSONB 
+ 100 iterations average exec time stringify o2 (big array no BigInt): JSON = 1.268180788421609 x JSONB 
 ***
 
 ***
- 100 iterations average exec time stringify o3 (big array contains BigInt): JSON = 16.440793281801323 x JSONB 
+ 100 iterations average exec time stringify o3 (big array contains BigInt): JSON = 0.958589841158739 x JSONB 
 ***

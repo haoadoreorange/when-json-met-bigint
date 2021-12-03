@@ -88,26 +88,38 @@ function jsonBigStringify(o: Record<string, unknown>) {
     return () => JSONB.stringify(o);
 }
 
-const average_json_o1 = benchmark(jsonStringify(o1), NB_OF_ITERATION, `JSON.stringify ${o1.name}`);
-const average_json_big_o1 = benchmark(jsonBigStringify(o1), NB_OF_ITERATION, `JSONB.stringify ${o1.name}`);
-const average_json_o2 = benchmark(jsonStringify(o2), NB_OF_ITERATION, `JSON.stringify ${o2.name}`);
-const average_json_big_o2 = benchmark(jsonBigStringify(o2), NB_OF_ITERATION, `JSONB.stringify ${o2.name}`);
-const average_json_o3 = benchmark(jsonStringify(o3), NB_OF_ITERATION, `JSON.stringify ${o3.name}`);
-const average_json_big_o3 = benchmark(jsonBigStringify(o3), NB_OF_ITERATION, `JSONB.stringify ${o3.name}`);
+const average_json_stringify_o1 = benchmark(jsonStringify(o1), NB_OF_ITERATION, `JSON.stringify ${o1.name}`);
+const average_json_big_stringify_o1 = benchmark(
+    jsonBigStringify(o1),
+    NB_OF_ITERATION,
+    `JSONB.stringify ${o1.name}`,
+);
+const average_json_stringify_o2 = benchmark(jsonStringify(o2), NB_OF_ITERATION, `JSON.stringify ${o2.name}`);
+const average_json_big_stringify_o2 = benchmark(
+    jsonBigStringify(o2),
+    NB_OF_ITERATION,
+    `JSONB.stringify ${o2.name}`,
+);
+const average_json_stringify_o3 = benchmark(jsonStringify(o3), NB_OF_ITERATION, `JSON.stringify ${o3.name}`);
+const average_json_big_stringify_o3 = benchmark(
+    jsonBigStringify(o3),
+    NB_OF_ITERATION,
+    `JSONB.stringify ${o3.name}`,
+);
 
 result.append(
     `***\n ${NB_OF_ITERATION} iterations average exec time stringify ${o1.name}: JSON = ${
-        average_json_o1 / average_json_big_o1
+        average_json_stringify_o1 / average_json_big_stringify_o1
     } x JSONB \n***`,
 );
 result.append(
     `***\n ${NB_OF_ITERATION} iterations average exec time stringify ${o2.name}: JSON = ${
-        average_json_o2 / average_json_big_o2
+        average_json_stringify_o2 / average_json_big_stringify_o2
     } x JSONB \n***`,
 );
 result.append(
     `***\n ${NB_OF_ITERATION} iterations average exec time stringify ${o3.name}: JSON = ${
-        average_json_o3 / average_json_big_o3
+        average_json_stringify_o3 / average_json_big_stringify_o3
     } x JSONB \n***`,
 );
 result.flush();

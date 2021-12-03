@@ -409,20 +409,20 @@ export const newParse = (
                 const value = object_or_array[key] as unknown;
                 if (isNonNullObject(value)) {
                     const revived_keys = new Set<string>();
-                    for (const k in value) {
-                        const next_this = !Array.isArray(value) ? { ...value } : [...value];
+                    for (const reviving_key in value) {
+                        const next_object_or_array = !Array.isArray(value) ? { ...value } : [...value];
                         // @ts-expect-error index array with string
-                        revived_keys.forEach((rk) => delete next_this[rk]);
+                        revived_keys.forEach((rk) => delete next_object_or_array[rk]);
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                        const v = walk(next_this, k);
-                        revived_keys.add(k);
+                        const v = walk(next_object_or_array, reviving_key);
+                        revived_keys.add(reviving_key);
                         if (v !== undefined) {
                             // @ts-expect-error index array with string
                             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                            value[k] = v;
+                            value[reviving_key] = v;
                         } else {
                             // @ts-expect-error index array with string
-                            delete value[k];
+                            delete value[reviving_key];
                         }
                     }
                 }
