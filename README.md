@@ -4,7 +4,9 @@
 
 [![NPM](https://nodei.co/npm/when-json-met-bigint.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/when-json-met-bigint/)
 
-This is a fork of [json-bigint](https://github.com/sidorares/json-bigint), rewritten in TypeScript, no longer use `bignumber.js`, and being actively maintained.
+This is a fork of [json-bigint](https://github.com/sidorares/json-bigint), rewritten in TypeScript, no longer use `bignumber.js`, and being actively maintained. It also supports an ad-hoc parser API to solve `bigint`/`number` determinism.
+
+Compare to [json-bigint](https://github.com/sidorares/json-bigint), `when-json-met-bigint` try its best to be "default JSON API compliant", all custom behaviours are opt-in through options (e.g `options.protoAction` 'preserve' instead of 'error' by default).
 
 ==========
 
@@ -93,8 +95,6 @@ Full support out-of-the-box, stringifies `BigInt` as pure numbers (no quotes, no
 
 ### Options
 
-By default, `when-json-met-bigint` try its best to be "default JSON API compliant", all custom behaviours are opt-in through options. 
-
 ==========
 
     - options.strict, boolean, default false
@@ -136,6 +136,7 @@ JSON.parse(dupkeys).dupkey: value 2
 Succesfully catched expected exception on duplicate keys: {"name":"SyntaxError","message":"Duplicate key \"dupkey\"","at":33,"text":"{ \"dupkey\": \"value 1\", \"dupkey\": \"value 2\"}"}
 
 ```
+
 ==========
 
     - options.parseBigIntAsString, boolean, default false
@@ -169,6 +170,7 @@ Input: { "key": 1234567890123456789 }
 Default type: object, With option type: string
 
 ```
+
 ==========
 
     - options.alwaysParseAsBigInt, boolean, default false
@@ -202,6 +204,7 @@ Input: { "key": 123 }
 Default type: number, With option type: bigint
 
 ```
+
 ==========
 
     - options.protoAction, boolean, default: "preserve". Possible values: "error", "ignore", "preserve"
@@ -215,9 +218,12 @@ If set to "preserve" the `__proto__` property is set. However, this **DOES NOT**
 example:
 
 ```js
-var JSONBalways = require('when-json-met-bigint')({ protoAction: 'ignore' });
-const user = JSONB.parse('{ "__proto__": { "admin": true }, "id": 12345 }');
+var JSONBno__proto__ = require('when-json-met-bigint')({ protoAction: 'ignore' });
+const user = JSONBno__proto__.parse('{ "__proto__": { "admin": true }, "id": 12345 }');
 // => result is { id: 12345 }
+var JSONB__proto__ = require('when-json-met-bigint');
+const user = JSONBno__proto__.parse('{ "__proto__": { "admin": true }, "id": 12345 }');
+// => result is { id: 12345, __proto__: { admin: true } } but user.admin === undefined
 ```
 
 ### TODO:
