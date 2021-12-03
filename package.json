@@ -1,6 +1,6 @@
 {
     "name": "when-json-met-bigint",
-    "version": "0.11.0",
+    "version": "0.12.0",
     "description": "Forked from json-bigint, rewritten in TS",
     "keywords": [
         "when-json-met-bigint",
