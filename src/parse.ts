@@ -1,6 +1,6 @@
 import { JsonBigIntOptions, PROTO_ACTIONS, CONSTRUCTOR_ACTIONS } from "lib";
 
-const isNonNullObject = (o: unknown): o is Record<string, unknown> => {
+const isNonNullObject = (o: unknown): o is Record<string, unknown> | unknown[] => {
     return typeof o === `object` && o !== null;
 };
 
@@ -151,7 +151,7 @@ export const newParse = (
             }
             while (p_current_char) {
                 const key = pString();
-                schema = isNonNullObject(schema) ? schema[key] : null;
+                schema = isNonNullObject(schema) && !Array.isArray(schema) ? schema[key] : null;
                 pSkipWhite();
                 pCurrentCharIs(`:`);
                 pNext();
@@ -283,6 +283,11 @@ export const newParse = (
             result_string = p_current_char;
             pNext();
         }
+        if (p_current_char === `0`) {
+            result_string += p_current_char;
+            pNext();
+            if (p_current_char >= `0` && p_current_char <= `9`) pError(`Bad number`);
+        }
         while (p_current_char >= `0` && p_current_char <= `9`) {
             result_string += p_current_char;
             pNext();
@@ -311,7 +316,6 @@ export const newParse = (
             return Infinity;
         } else {
             if (Number.isSafeInteger(result_number)) {
-                if (result_number.toString() !== result_string) pError(`Bad number`);
                 return p_options.alwaysParseAsBigInt ||
                     (typeof schema === `function` ? schema(result_number) : schema) === `bigint`
                     ? BigInt(result_number)
@@ -399,25 +403,33 @@ export const newParse = (
         // in an empty key. If there is not a reviver function, we simply return the
         // result.
 
-        return typeof reviver === `function`
-            ? ((function walk(object: Record<string, unknown>, key: string) {
-                  const value = object[key];
-                  if (isNonNullObject(value)) {
-                      const removed_keys = {} as Record<string, undefined>;
-                      Object.entries(value).forEach(([k]) => {
-                          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                          const v = walk({ ...value, ...removed_keys }, k);
-                          removed_keys[k] = undefined;
-                          if (v !== undefined) {
-                              value[k] = v;
-                          } else {
-                              delete value[k];
-                          }
-                      });
-                  }
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-                  return reviver.call(object, key, value);
-              })({ "": result }, ``) as JsonValue)
-            : result;
+        if (typeof reviver === `function`) {
+            return (function walk(object_or_array: Record<string, unknown> | unknown[], key: string) {
+                // @ts-expect-error index array with string
+                const value = object_or_array[key] as unknown;
+                if (isNonNullObject(value)) {
+                    const revived_keys = new Set<string>();
+                    for (const k in value) {
+                        const next_this = !Array.isArray(value) ? { ...value } : [...value];
+                        // @ts-expect-error index array with string
+                        revived_keys.forEach((rk) => delete next_this[rk]);
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                        const v = walk(next_this, k);
+                        revived_keys.add(k);
+                        if (v !== undefined) {
+                            // @ts-expect-error index array with string
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                            value[k] = v;
+                        } else {
+                            // @ts-expect-error index array with string
+                            delete value[k];
+                        }
+                    }
+                }
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+                return reviver.call(object_or_array, key, value);
+            })({ "": result }, ``) as JsonValue;
+        }
+        return result;
     };
 };

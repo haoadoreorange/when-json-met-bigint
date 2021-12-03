@@ -1,4 +1,4 @@
-const toJSONisImplemented = <T>(o: T): o is T & { toJSON: (key?: string) => unknown } => {
+const isObjectWithToJSOnImplemented = <T>(o: T): o is T & { toJSON: (key?: string) => unknown } => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
     return typeof o === `object` && o !== null && typeof (o as any).toJSON === `function`;
 };
@@ -45,19 +45,19 @@ export const stringify = ((): typeof JSON.stringify => {
     // data structure.
 
     let s_indent: string, // JSON string indentation
-        s_replacer: ((this: any, key: string, value: any) => any) | (string | number)[] | null | undefined;
+        s_replacer: ((this: any, key: string, value: any) => any) | (string | number)[] | null;
 
-    const sStringify = (
-        key_or_index: string | number,
-        object_or_array: Record<string | number, unknown>,
+    const sStringify = <T extends Record<string, unknown> | unknown[]>(
+        key_or_index: T extends Record<string, unknown> ? keyof T : number,
+        object_or_array: T,
     ): string | undefined => {
         // Produce a string from object_or_array[key_or_index].
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        let value = object_or_array[key_or_index];
+        // @ts-expect-error index array with string
+        let value = object_or_array[key_or_index] as unknown;
 
         // If the value has toJSON method, call it.
-        if (toJSONisImplemented(value)) {
+        if (isObjectWithToJSOnImplemented(value)) {
             value = value.toJSON();
         }
 
@@ -91,9 +91,7 @@ export const stringify = ((): typeof JSON.stringify => {
                     // Make an array to hold the partial results of stringifying this object value.
                     // The value is an array. Stringify every element. Use null as a placeholder
                     // for non-JSON values.
-                    const partial = value.map(
-                        (v, i) => sStringify(i, v as Record<number, unknown>) || `null`,
-                    );
+                    const partial = value.map((_v_, i) => sStringify(i, value as unknown[]) || `null`);
 
                     // Join all of the elements together, separated with commas, and wrap them in
                     // brackets.
@@ -105,25 +103,15 @@ export const stringify = ((): typeof JSON.stringify => {
                 }
 
                 const partial: string[] = [];
-                if (Array.isArray(s_replacer)) {
-                    // If the replacer is an array, use it to select the members to be stringified.
-                    s_replacer.forEach((k) => {
-                        if (typeof k === `string` || typeof k === `number`) {
-                            const v = sStringify(k, value as Record<string, unknown>);
-                            if (v) {
-                                partial.push(quote(k.toString()) + (s_indent ? `: ` : `:`) + v);
-                            }
-                        }
-                    });
-                } else {
-                    // Otherwise, iterate through all of the keys in the object.
-                    Object.keys(value).forEach((k) => {
-                        const v = sStringify(k, value as Record<string, unknown>);
+                (Array.isArray(s_replacer) ? s_replacer : Object.keys(value)).forEach((key) => {
+                    if (typeof key === `string` || typeof key === `number`) {
+                        const key_string = key.toString();
+                        const v = sStringify(key_string, value as Record<string, unknown>);
                         if (v) {
-                            partial.push(quote(k) + (s_indent ? `: ` : `:`) + v);
+                            partial.push(quote(key_string) + (s_indent ? `: ` : `:`) + v);
                         }
-                    });
-                }
+                    }
+                });
 
                 // Join all of the member texts together, separated with commas,
                 // and wrap them in braces.
@@ -151,7 +139,7 @@ export const stringify = ((): typeof JSON.stringify => {
 
         // If there is a replacer, it must be a function or an array.
         if (typeof replacer === `function` || Array.isArray(replacer)) s_replacer = replacer;
-        else replacer = null;
+        else s_replacer = null;
 
         // Make a fake root object containing our value under the key of ''.
         // Return the result of stringifying the value.
