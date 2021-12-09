@@ -10,7 +10,7 @@ const tsProject = require(`gulp-typescript`).createProject(`tsconfig.build.json`
 });
 const gulp = require(`gulp`);
 exports.default = () => {
-    const compiled_src = tsProject
+    return tsProject
         .src()
         .pipe(sourcemaps.init())
         .pipe(
@@ -19,8 +19,7 @@ exports.default = () => {
                 end_comment: `</DEV-ONLY>`,
             }),
         )
-        .pipe(tsProject());
-    return compiled_src
+        .pipe(tsProject())
         .pipe(sourcemaps.write(`.`, { includeContent: false, sourceRoot: `./` }))
         .pipe(gulp.dest(`dist`));
 };
