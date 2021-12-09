@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/naming-convention */
-import JSB from "index";
+import { JSONB as JSB } from "index";
 
 describe(`Testing parser schema`, function () {
     it(`should respect schema`, function () {

@@ -1,6 +1,6 @@
 import fs from "fs";
 import { performance } from "perf_hooks";
-import JSONB from "index";
+import { JSONB } from "index";
 
 const RESULT_FILE_PATH = `benchmark.md`;
 const NB_OF_ITERATION = 100;

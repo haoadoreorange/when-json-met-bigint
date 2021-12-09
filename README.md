@@ -21,7 +21,8 @@ It's a good idea to serialize values which might fall out of IEEE 754 integer pr
 example:
 
 ```js
-var JSONB = require('when-json-met-bigint');
+var JSONB = require('when-json-met-bigint').JSONB;
+// or var { JSONB, parse, stringify } = require('when-json-met-bigint');
 
 var json = '{ "value" : 9223372036854775807, "v2": 123 }';
 console.log('Input:', json);
@@ -107,8 +108,8 @@ Setting `options.strict = true` will fail-fast on such duplicate-key occurances 
 example:
 
 ```js
-var JSONB = require('when-json-met-bigint');
-var JSONBstrict = require('when-json-met-bigint')({ strict: true });
+var JSONB = require('when-json-met-bigint').JSONB;
+var JSONBstrict = require('when-json-met-bigint').JSONB({ strict: true });
 
 var dupkeys = '{ "dupkey": "value 1", "dupkey": "value 2"}';
 console.log('\n\nDuplicate Key test with both lenient and strict JSON parsing');
@@ -148,8 +149,8 @@ Note that this is a dangerous behavior as it breaks the default functionality of
 example:
 
 ```js
-var JSONB = require('when-json-met-bigint');
-var JSONBstring = require('when-json-met-bigint')({ parseBigIntAsString: true });
+var JSONB = require('when-json-met-bigint').JSONB;
+var JSONBstring = require('when-json-met-bigint').JSONB({ parseBigIntAsString: true });
 var key = '{ "key": 1234567890123456789 }';
 console.log('\n\nStoring the BigInt as a string, instead of a BigInt');
 console.log('Input:', key);
@@ -182,8 +183,8 @@ Note that this is a dangerous behavior as it breaks the default functionality of
 example:
 
 ```js
-var JSONB = require('when-json-met-bigint');
-var JSONBalways = require('when-json-met-bigint')({ alwaysParseAsBigInt: true });
+var JSONB = require('when-json-met-bigint').JSONB;
+var JSONBalways = require('when-json-met-bigint').JSONB({ alwaysParseAsBigInt: true });
 var key = '{ "key": 123 }'; // there is no need for BigInt by default, but we're forcing it
 console.log(`\n\nStoring the Number as a BigInt, instead of a Number`);
 console.log('Input:', key);
@@ -218,10 +219,10 @@ If set to "preserve" the `__proto__` property is set. However, this **DOES NOT**
 example:
 
 ```js
-var JSONBno__proto__ = require('when-json-met-bigint')({ protoAction: 'ignore' });
+var JSONBno__proto__ = require('when-json-met-bigint').JSONB({ protoAction: 'ignore' });
 const user = JSONBno__proto__.parse('{ "__proto__": { "admin": true }, "id": 12345 }');
 // => result is { id: 12345 }
-var JSONB__proto__ = require('when-json-met-bigint');
+var JSONB__proto__ = require('when-json-met-bigint').JSONB;
 const user = JSONBno__proto__.parse('{ "__proto__": { "admin": true }, "id": 12345 }');
 // => result is { id: 12345, __proto__: { admin: true } } but user.admin === undefined
 ```

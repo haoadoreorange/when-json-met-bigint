@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/naming-convention */
-import JSB from "index";
+import { JSONB as JSB } from "index";
 
 describe(`__proto__ and constructor assignment`, function () {
     it(`should set __proto__ property but not a prototype if protoAction is set to preserve`, () => {

@@ -5,7 +5,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/naming-convention */
-import JSONB from "index";
+import { JSONB } from "index";
 
 describe(`__proto__ and constructor assignment`, function () {
     it(`should throw when parse("01") or parse("-01")`, () => {

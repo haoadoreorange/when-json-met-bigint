@@ -6,7 +6,9 @@ import { JsonBigIntOptions } from "lib";
 import { newParse } from "parse";
 import { stringify } from "stringify";
 
-export default Object.assign(
+const parse = newParse();
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const JSONB = Object.assign(
     (options?: JsonBigIntOptions) => {
         return {
             parse: newParse(options),
@@ -14,5 +16,6 @@ export default Object.assign(
         };
     },
     // default options
-    { parse: newParse(), stringify },
+    { parse, stringify },
 );
+export { parse, stringify };
