@@ -91,7 +91,9 @@ export const stringify = ((): typeof JSON.stringify => {
                     // Make an array to hold the partial results of stringifying this object value.
                     // The value is an array. Stringify every element. Use null as a placeholder
                     // for non-JSON values.
-                    const partial = value.map((_v_, i) => sStringify(i, value as unknown[]) || `null`);
+                    const partial = value.map(
+                        (_v_, i) => sStringify(i, value as unknown[]) || `null`,
+                    );
 
                     // Join all of the elements together, separated with commas, and wrap them in
                     // brackets.

@@ -3,7 +3,7 @@ process.on(`unhandledRejection`, (reason, promise) => {
     process.exit(1);
 });
 import { JsonBigIntOptions } from "lib";
-import { newParse } from "parse";
+import { newParse, Schema } from "parse";
 import { stringify } from "stringify";
 
 const parse = newParse();
@@ -18,4 +18,4 @@ export const JSONB = Object.assign(
     // default options
     { parse, stringify },
 );
-export { parse, stringify };
+export { parse, stringify, Schema };

@@ -27,7 +27,7 @@ const ESCAPEE = {
 } as const;
 
 type NumberOrBigInt = `number` | `bigint`;
-type Schema =
+export type Schema =
     | NumberOrBigInt
     | ((n: number | bigint) => NumberOrBigInt)
     | { [key: string]: Schema }
