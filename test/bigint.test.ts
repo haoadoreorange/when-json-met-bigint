@@ -5,12 +5,14 @@
 import { JSONB as JSB } from "index";
 
 describe(`Testing bigint support`, function () {
-    const input = `{"big":9223372036854775807,"small":123}`;
+    const input = `{"big":9223372036854775807,"small":123,"decimal":51.971428571428575}`;
 
     it(`Should show classic JSON.parse lacks bigint support`, function (done) {
         const obj = JSON.parse(input);
         // string from small int
         expect(obj.small.toString()).toEqual(`123`);
+        // string from small float
+        expect(obj.decimal.toString()).toEqual(`51.971428571428575`);
         // string from big int
         expect(obj.big.toString()).not.toEqual(`9223372036854775807`);
 
@@ -24,6 +26,8 @@ describe(`Testing bigint support`, function () {
         const obj = JSONB.parse(input);
         // string from small int
         expect(obj.small.toString()).toEqual(`123`);
+        // string from small float
+        expect(obj.decimal.toString()).toEqual(`51.971428571428575`);
         // string from big int
         expect(obj.big.toString()).toEqual(`9223372036854775807`);
         // instanceof big int
