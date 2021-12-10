@@ -31,7 +31,8 @@
         "test": "jest",
         "semver": "yarn dev --upgrade && yarn upgrade && syncyarnlock -sk && yarn",
         "latest": "yarn dev --upgrade && yarn upgrade -L && syncyarnlock -sk && yarn",
-        "benchmark": "yarn compile && node dist/benchmark.js && rimraf dist/benchmark*"
+        "benchmark": "rimraf benchmark && yarn compile && node dist/benchmark.js && rimraf dist/benchmark*",
+        "compile-readme": "bash compile-readme.sh"
     },
     "lint-staged": {
         "*.{js,ts}": [
@@ -52,6 +53,7 @@
         "@typescript-eslint/eslint-plugin": "^4.22.0",
         "@typescript-eslint/parser": "^4.22.0",
         "@zerollup/ts-transform-paths": "^1.7.18",
+        "benny": "^3.7.1",
         "eslint": "^7.24.0",
         "eslint-config-prettier": "^8.1.0",
         "eslint-plugin-prettier": "^3.3.1",

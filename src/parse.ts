@@ -183,7 +183,8 @@ export const newParse = (
                 // @ts-expect-error next() change ch
                 if (p_current_char === `}`) {
                     pNext();
-                    if (p_options.protoAction === `preserve`) Object.setPrototypeOf(result, Object.prototype);
+                    if (p_options.protoAction === `preserve`)
+                        Object.setPrototypeOf(result, Object.prototype);
                     return result;
                 }
                 pCurrentCharIs(`,`);
@@ -275,7 +276,10 @@ export const newParse = (
 
     const pNumber = (schema?: Schema) => {
         // Parse a number value.
-        schema = schema === `bigint` || schema === `number` || typeof schema === `function` ? schema : null;
+        schema =
+            schema === `bigint` || schema === `number` || typeof schema === `function`
+                ? schema
+                : null;
 
         let result_string = ``;
 
@@ -380,7 +384,9 @@ export const newParse = (
             case `-`:
                 return pNumber(schema);
             default:
-                return p_current_char >= `0` && p_current_char <= `9` ? pNumber(schema) : pBooleanOrNull();
+                return p_current_char >= `0` && p_current_char <= `9`
+                    ? pNumber(schema)
+                    : pBooleanOrNull();
         }
     };
 
@@ -404,13 +410,18 @@ export const newParse = (
         // result.
 
         if (typeof reviver === `function`) {
-            return (function walk(object_or_array: Record<string, unknown> | unknown[], key: string) {
+            return (function walk(
+                object_or_array: Record<string, unknown> | unknown[],
+                key: string,
+            ) {
                 // @ts-expect-error index array with string
                 const value = object_or_array[key] as unknown;
                 if (isNonNullObject(value)) {
                     const revived_keys = new Set<string>();
                     for (const reviving_key in value) {
-                        const next_object_or_array = !Array.isArray(value) ? { ...value } : [...value];
+                        const next_object_or_array = !Array.isArray(value)
+                            ? { ...value }
+                            : [...value];
                         // @ts-expect-error index array with string
                         revived_keys.forEach((rk) => delete next_object_or_array[rk]);
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment

@@ -1,58 +1,38 @@
-import fs from "fs";
-import { performance } from "perf_hooks";
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-floating-promises */
+process.on(`unhandledRejection`, (reason, promise) => {
+    console.error(`Unhandled Rejection reason:`);
+    console.error(reason);
+    console.error(`Unhandled Rejection at:`);
+    console.error(promise);
+    process.exit(1);
+});
 import { JSONB } from "index";
+import b from "benny";
 
-const RESULT_FILE_PATH = `benchmark.md`;
-const NB_OF_ITERATION = 100;
-const FLUSH_THRESHOLD = 100;
 const SMALL_ARRAY_LENGTH = 1000;
 const BIG_ARRAY_LENGTH = SMALL_ARRAY_LENGTH * 100;
 
-const forceGC = () => {
-    if (global.gc) {
-        global.gc();
-    } else {
-        console.warn(`No GC hook! Start your program as \`node --expose-gc file.js\`.`);
+declare global {
+    interface String {
+        replaceAll: (str: string, new_str: string) => string;
     }
+}
+String.prototype.replaceAll = function (str, new_str) {
+    // If a regex pattern
+    if (Object.prototype.toString.call(str).toLowerCase() === `[object regexp]`) {
+        return this.replace(str, new_str);
+    }
+    // If a string
+    return this.replace(new RegExp(str, `g`), new_str);
 };
 
-class Result {
-    private _text = ``;
-    private _i = 0;
-    constructor() {
-        fs.writeFileSync(RESULT_FILE_PATH, ``, `utf8`);
-    }
-    append(s: string) {
-        console.log(s);
-        this._text += `${s}\n\n`;
-        this._i++;
-        if (this._i === FLUSH_THRESHOLD) {
-            this.flush();
-            this._i = 0;
-        }
-    }
-    flush() {
-        fs.appendFileSync(RESULT_FILE_PATH, this._text, `utf8`);
-        this._text = ``;
-        forceGC();
-    }
-}
-const result = new Result();
-
-function benchmark(f: () => void, nb_of_iteration: number, title: string) {
-    result.append(`===> ${title}`);
-    let total = 0;
-    for (let i = 0; i < nb_of_iteration; i++) {
-        const start = performance.now();
-        f();
-        const exec_time = performance.now() - start;
-        total += exec_time;
-        // result.append(`Iteration ${i} exec time: ${exec_time}`);
-    }
-    const average = total / nb_of_iteration;
-    result.append(`===> Done, ${nb_of_iteration} iterations average exec time: ${average}`);
-    return average;
-}
+const suiteArgs = (suite_name: string) => [
+    b.cycle(),
+    b.complete(),
+    b.save({ file: suite_name.replaceAll(` `, `-`) }),
+    b.save({ file: suite_name.replaceAll(` `, `-`), format: `table.html` }),
+];
 
 const o = {
     a: `Lorem ipsum dolor sit amet`,
@@ -61,65 +41,105 @@ const o = {
     s: BigInt(Number.MAX_SAFE_INTEGER) + 100n,
     e: BigInt(Number.MAX_SAFE_INTEGER) + 100n,
 };
+type TestObject = typeof o & {
+    array: Record<string, unknown>[];
+    name: string;
+} & {
+    [key: string]: typeof o;
+};
 
-const o1 = { ...o, array: [] as Record<string, unknown>[], name: `o1 (small array contains BigInt)` };
+const o1 = {
+    ...o,
+    array: [],
+    name: `small obj with BigInt`,
+} as unknown as TestObject;
 for (let i = 0; i < SMALL_ARRAY_LENGTH; i++) {
+    o1[`i${i}`] = o;
     o1.array.push(o);
 }
 
-const o2 = { ...o, x: [] as number[], y: [] as number[], name: `o2 (big array no BigInt)` };
+const o2 = { ...o, x: [], y: [], name: `big obj no BigInt` } as unknown as TestObject & {
+    x: number[];
+    y: number[];
+};
 for (let i = 0; i < BIG_ARRAY_LENGTH; i++) {
+    o2[`i${i}`] = { ...o, s: 99999, e: 99999 } as unknown as typeof o;
     o2.x.push(99999);
     o2.y.push(99999);
 }
 
-const o3 = { ...o, array: [] as Record<string, unknown>[], name: `o3 (big array contains BigInt)` };
+const o3 = { ...o, array: [], name: `big obj with BigInt` } as unknown as TestObject;
 for (let i = 0; i < BIG_ARRAY_LENGTH; i++) {
+    o3[`i${i}`] = o;
     o3.array.push(o);
 }
 
 const replacer = (_key_: unknown, value: unknown) =>
     typeof value === `bigint` ? value.toString() + `n` : value;
-function jsonStringify(o: Record<string, unknown>) {
-    return () => JSON.stringify(o, replacer).replace(/"(-?\d+)n"/g, `$1`);
-}
+const jsonStringify = (o: Record<string, unknown>) => () =>
+    JSON.stringify(o, replacer).replace(/"(-?\d+)n"/g, `$1`);
+const jsonbStringify = (o: Record<string, unknown>) => () => JSONB.stringify(o);
 
-function jsonBigStringify(o: Record<string, unknown>) {
-    return () => JSONB.stringify(o);
-}
+const suite1_name = `stringify ${o1.name}`;
+b.suite(
+    suite1_name,
+    b.add(`JSON`, jsonStringify(o1)),
+    b.add(`when-json-met-bigint`, jsonbStringify(o1)),
+    ...suiteArgs(suite1_name),
+);
+const suite2_name = `stringify ${o2.name}`;
+b.suite(
+    suite2_name,
+    b.add(`JSON`, jsonStringify(o2)),
+    b.add(`when-json-met-bigint`, jsonbStringify(o2)),
+    ...suiteArgs(suite2_name),
+);
+const suite3_name = `stringify ${o3.name}`;
+b.suite(
+    suite3_name,
+    b.add(`JSON`, jsonStringify(o3)),
+    b.add(`when-json-met-bigint`, jsonbStringify(o3)),
+    ...suiteArgs(suite3_name),
+);
 
-const average_json_stringify_o1 = benchmark(jsonStringify(o1), NB_OF_ITERATION, `JSON.stringify ${o1.name}`);
-const average_json_big_stringify_o1 = benchmark(
-    jsonBigStringify(o1),
-    NB_OF_ITERATION,
-    `JSONB.stringify ${o1.name}`,
-);
-const average_json_stringify_o2 = benchmark(jsonStringify(o2), NB_OF_ITERATION, `JSON.stringify ${o2.name}`);
-const average_json_big_stringify_o2 = benchmark(
-    jsonBigStringify(o2),
-    NB_OF_ITERATION,
-    `JSONB.stringify ${o2.name}`,
-);
-const average_json_stringify_o3 = benchmark(jsonStringify(o3), NB_OF_ITERATION, `JSON.stringify ${o3.name}`);
-const average_json_big_stringify_o3 = benchmark(
-    jsonBigStringify(o3),
-    NB_OF_ITERATION,
-    `JSONB.stringify ${o3.name}`,
-);
+const s1 = JSONB.stringify(o1);
+const s2 = JSONB.stringify(o2);
+const s3 = JSONB.stringify(o3);
+const reviver = (_key_: string, value: unknown) => {
+    if (typeof value === `string`) {
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        const matchArray = /(-?\d{16,})n/.exec(value);
+        if (matchArray) {
+            // "1234567890123456789n" => 1234567890123456789n
+            return BigInt(matchArray[1]);
+        }
+    }
+    return value;
+};
+const jsonParse = (s: string) => () => {
+    s = s.replace(/:(-?\d{16,})([,}])/g, `:"$1n"$2`);
+    return JSON.parse(s, reviver);
+};
+const jsonbParse = (s: string) => () => JSONB.parse(s);
 
-result.append(
-    `***\n ${NB_OF_ITERATION} iterations average exec time stringify ${o1.name}: JSON = ${
-        average_json_stringify_o1 / average_json_big_stringify_o1
-    } x JSONB \n***`,
+const suite4_name = `parse ${o1.name}`;
+b.suite(
+    suite4_name,
+    b.add(`JSON`, jsonParse(s1)),
+    b.add(`when-json-met-bigint`, jsonbParse(s1)),
+    ...suiteArgs(suite4_name),
 );
-result.append(
-    `***\n ${NB_OF_ITERATION} iterations average exec time stringify ${o2.name}: JSON = ${
-        average_json_stringify_o2 / average_json_big_stringify_o2
-    } x JSONB \n***`,
+const suite5_name = `parse ${o2.name}`;
+b.suite(
+    suite5_name,
+    b.add(`JSON`, jsonParse(s2)),
+    b.add(`when-json-met-bigint`, jsonbParse(s2)),
+    ...suiteArgs(suite5_name),
 );
-result.append(
-    `***\n ${NB_OF_ITERATION} iterations average exec time stringify ${o3.name}: JSON = ${
-        average_json_stringify_o3 / average_json_big_stringify_o3
-    } x JSONB \n***`,
+const suite6_name = `parse ${o3.name}`;
+b.suite(
+    suite6_name,
+    b.add(`JSON`, jsonParse(s3)),
+    b.add(`when-json-met-bigint`, jsonbParse(s3)),
+    ...suiteArgs(suite6_name),
 );
-result.flush();

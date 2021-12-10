@@ -1,0 +1,27 @@
+{
+  "name": "stringify big obj no BigInt",
+  "date": "2021-12-09T19:01:22.661Z",
+  "version": null,
+  "results": [
+    {
+      "name": "JSON",
+      "ops": 6,
+      "margin": 2.55,
+      "percentSlower": 0
+    },
+    {
+      "name": "when-json-met-bigint",
+      "ops": 4,
+      "margin": 5.52,
+      "percentSlower": 33.33
+    }
+  ],
+  "fastest": {
+    "name": "JSON",
+    "index": 0
+  },
+  "slowest": {
+    "name": "when-json-met-bigint",
+    "index": 1
+  }
+}

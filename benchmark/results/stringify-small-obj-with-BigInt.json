@@ -1,0 +1,27 @@
+{
+  "name": "stringify small obj with BigInt",
+  "date": "2021-12-09T19:01:09.008Z",
+  "version": null,
+  "results": [
+    {
+      "name": "JSON",
+      "ops": 292,
+      "margin": 1.92,
+      "percentSlower": 0
+    },
+    {
+      "name": "when-json-met-bigint",
+      "ops": 264,
+      "margin": 1.07,
+      "percentSlower": 9.59
+    }
+  ],
+  "fastest": {
+    "name": "JSON",
+    "index": 0
+  },
+  "slowest": {
+    "name": "when-json-met-bigint",
+    "index": 1
+  }
+}
