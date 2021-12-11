@@ -282,9 +282,11 @@ export const newParse = (
         // Parse a number value.
 
         let result_string = ``;
+        let is_positive = true; // for Infinity
 
         if (p_current_char === `-`) {
             result_string = p_current_char;
+            is_positive = false;
             pNext();
         }
         if (p_current_char === `0`) {
@@ -316,29 +318,28 @@ export const newParse = (
             }
         }
         const result_number = Number(result_string);
-        if (!isFinite(result_number)) {
-            return Infinity;
+        if (Number.isNaN(result_number)) pError(`Bad number`);
+        if (!Number.isFinite(result_number)) {
+            return is_positive ? Infinity : -Infinity;
         } else {
             if (Number.isSafeInteger(result_number)) {
                 return p_options.alwaysParseAsBigInt ||
                     (typeof schema === `function` ? schema(result_number) : schema) === `bigint`
                     ? BigInt(result_number)
                     : result_number;
-            }
-            // Number with fractional part should be treated as number(double) including big integers in scientific notation, i.e 1.79e+308
-            else {
-                if (p_options.parseBigIntAsString) {
-                    return result_string;
-                } else {
-                    let result_bigint;
-                    if (typeof schema === `function`) {
-                        result_bigint = BigInt(result_string);
-                        schema = schema(result_bigint);
-                    }
-                    return /[.eE]/.test(result_string) || schema === `number`
-                        ? result_number
-                        : result_bigint || BigInt(result_string);
+            } else {
+                // Number with fractional part should be treated as number(double)
+                // including big integers in scientific notation, i.e 1.79e+308
+                if (/[.eE]/.test(result_string)) return result_number;
+                let result_bigint;
+                if (typeof schema === `function`) {
+                    result_bigint = BigInt(result_string);
+                    schema = schema(result_bigint);
                 }
+                if (schema === `number`) return result_number;
+                return p_options.parseBigIntAsString
+                    ? result_string
+                    : result_bigint || BigInt(result_string);
             }
         }
     };

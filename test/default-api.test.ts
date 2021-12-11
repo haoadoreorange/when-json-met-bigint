@@ -8,17 +8,23 @@
 import { JSONB } from "index";
 
 describe(`__proto__ and constructor assignment`, function () {
-    it(`should throw when parse("01") or parse("-01")`, () => {
+    it(`should throw when parse "01" "-01" "1e"`, () => {
         expect(() => {
             JSONB.parse(`01`);
         }).toThrow(`Bad number`);
         expect(() => {
             JSONB.parse(`-01`);
         }).toThrow(`Bad number`);
+        expect(() => {
+            JSONB.parse(`1e`);
+        }).toThrow(`Bad number`);
     });
 
     it(`should parse number bigger than infinity limit (> 1.797693134862315E+308) as Infinity`, () => {
-        expect(JSONB.parse(`1e+500`)).toEqual(Infinity);
+        expect(JSONB.parse(`1.797693134862316E+308`)).toEqual(Infinity);
+    });
+    it(`should parse number smaller than infinity limit (< 1.797693134862315E+308) as -Infinity`, () => {
+        expect(JSONB.parse(`-1.797693134862316E+308`)).toEqual(-Infinity);
     });
 
     it(`should set __proto__ property but not prototype`, () => {
