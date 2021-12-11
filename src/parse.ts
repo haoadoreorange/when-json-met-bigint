@@ -30,7 +30,7 @@ type NumberOrBigInt = `number` | `bigint`;
 export type Schema =
     | NumberOrBigInt
     | ((n: number | bigint) => NumberOrBigInt)
-    | { [key: string]: Schema }
+    | { [key: string | symbol]: Schema }
     | (Schema | null)[];
 
 type JsonValue = Record<string, unknown> | unknown[] | string | number | bigint | boolean | null;
@@ -150,8 +150,10 @@ export const newParse = (
             }
             while (p_current_char) {
                 const key = pString();
-                schema =
-                    isNonNullObject(schema) && !Array.isArray(schema) ? schema[key] : undefined;
+                const sub_schema =
+                    isNonNullObject(schema) && !Array.isArray(schema)
+                        ? schema[key] || schema[Symbol.for(`any`)]
+                        : undefined;
                 pSkipWhite();
                 pCurrentCharIs(`:`);
                 pNext();
@@ -165,7 +167,7 @@ export const newParse = (
                     } else if (p_options.protoAction === `ignore`) {
                         pJsonValue();
                     } else {
-                        result[key] = pJsonValue(schema);
+                        result[key] = pJsonValue(sub_schema);
                     }
                 } else if (SUSPECT_CONSTRUCTOR_RX.test(key) === true) {
                     if (p_options.constructorAction === `error`) {
@@ -173,10 +175,10 @@ export const newParse = (
                     } else if (p_options.constructorAction === `ignore`) {
                         pJsonValue();
                     } else {
-                        result[key] = pJsonValue(schema);
+                        result[key] = pJsonValue(sub_schema);
                     }
                 } else {
-                    result[key] = pJsonValue(schema);
+                    result[key] = pJsonValue(sub_schema);
                 }
 
                 pSkipWhite();

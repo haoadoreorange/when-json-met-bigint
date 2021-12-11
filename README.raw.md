@@ -98,14 +98,15 @@ type NumberOrBigInt = `number` | `bigint`;
 type Schema =
     | NumberOrBigInt
     | ((n: number | bigint) => NumberOrBigInt)
-    | { [key: string]: Schema }
+    | { [key: string | symbol]: Schema }
     | (Schema | null)[];
 ```
 
 To put it simple, the schema-like argument is an object with fields and
 sub-fields being the fields and sub-fields of the expected parsed object,
 following the same structure, for which users want to specify whether to force
-it as `BigInt` or `Number`.
+it as `BigInt` or `Number`. `symbol` type keys are used for special meanings to
+avoid JSON keys clashing.
 
 Those fields can take 3 different values, a string 'number' or 'bigint' meaning
 it will be parsed as `Number` or `BigInt`, respectively. The 3rd possible value
@@ -113,6 +114,13 @@ is a callback function `(n: number | bigint) => 'number' | 'bigint'`, with `n`
 being either `number` or `bigint` as being parsed by default depending on the
 size. Users for example can use this callback to `throw Error` in case the type
 is not what they're expecting.
+
+To omit the key, aka define a schema for any key in an object, use the `symbol`
+value `Symbol.for('any')` as key, like this `{ [Symbol.for('any')]: 'bigint'}`.
+You **MUST NOT** use `Symbol('any')` since `Symbol('any')` !==
+`Symbol.for('any')`, which is used to index the schema. The
+`Symbol.for('any')`'s schema, if presents, is only used when the specified key's
+one does not exist (for any `key` such that `schema[key] === undefined`).
 
 For `Array` in the schema-like object, a single item array is treated as `T[]`,
 that is the item will be the schema for all items in the parsed array. An array
