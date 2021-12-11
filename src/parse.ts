@@ -219,7 +219,7 @@ export const newParse = (
                             ? schema[result.length]
                             : is_array
                             ? schema[0]
-                            : undefined) || undefined,
+                            : undefined) as undefined, // It's ok to cast null to undefined
                     ),
                 );
                 pSkipWhite();
