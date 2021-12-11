@@ -99,8 +99,7 @@ type Schema =
     | NumberOrBigInt
     | ((n: number | bigint) => NumberOrBigInt)
     | { [key: string]: Schema }
-    | Schema[]
-    | null;
+    | (Schema | null)[];
 ```
 
 To put it simple, the schema-like argument is an object with fields and

@@ -8,7 +8,9 @@ describe(`Testing parser schema`, function () {
     it(`should respect schema`, function () {
         const JSONB = JSB;
         expect(typeof JSONB.parse(`123`, null, `bigint`)).toEqual(`bigint`);
-        expect(typeof JSONB.parse(`{"a": {"b": 123} }`, null, { a: { b: `bigint` } }).a.b).toEqual(`bigint`);
+        expect(typeof JSONB.parse(`{"a": {"b": 123} }`, null, { a: { b: `bigint` } }).a.b).toEqual(
+            `bigint`,
+        );
         expect(() => {
             JSONB.parse(`{"a": {"b": 123} }`, null, {
                 a: {

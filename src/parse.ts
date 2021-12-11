@@ -31,8 +31,7 @@ export type Schema =
     | NumberOrBigInt
     | ((n: number | bigint) => NumberOrBigInt)
     | { [key: string]: Schema }
-    | Schema[]
-    | null;
+    | (Schema | null)[];
 
 type JsonValue = Record<string, unknown> | unknown[] | string | number | bigint | boolean | null;
 // Closure for internal state variables.
@@ -151,7 +150,8 @@ export const newParse = (
             }
             while (p_current_char) {
                 const key = pString();
-                schema = isNonNullObject(schema) && !Array.isArray(schema) ? schema[key] : null;
+                schema =
+                    isNonNullObject(schema) && !Array.isArray(schema) ? schema[key] : undefined;
                 pSkipWhite();
                 pCurrentCharIs(`:`);
                 pNext();
@@ -208,14 +208,16 @@ export const newParse = (
                 pNext();
                 return result; // empty array
             }
+            const is_array = Array.isArray(schema);
+            const is_tuple_like = is_array && schema.length > 1;
             while (p_current_char) {
                 result.push(
                     pJsonValue(
-                        Array.isArray(schema)
-                            ? schema.length > 1
-                                ? schema[result.length]
-                                : schema[0]
-                            : null,
+                        (is_tuple_like
+                            ? schema[result.length]
+                            : is_array
+                            ? schema[0]
+                            : undefined) || undefined,
                     ),
                 );
                 pSkipWhite();
@@ -276,10 +278,6 @@ export const newParse = (
 
     const pNumber = (schema?: Schema) => {
         // Parse a number value.
-        schema =
-            schema === `bigint` || schema === `number` || typeof schema === `function`
-                ? schema
-                : null;
 
         let result_string = ``;
 
