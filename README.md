@@ -191,21 +191,21 @@ throw 'Decimal and scientific notation cannot be BigInt'
 
 ==========
 
--   options.strict, boolean, default false
+-   options.errorOnDuplicatedKeys, boolean, default false
 
-Specify the parsing should be "strict" towards reporting duplicate-keys in the
-parsed string. The default follows what is allowed in standard json and
-resembles the behavior of JSON.parse, but overwrites any previous values with
-the last one assigned to the duplicate-key.
+Specify the parsing should throw on duplicated keys in the parsed string. The
+default follows what is allowed in default `JSON` and resembles the behavior of
+`JSON.parse`, but overwrites any previous values with the last one assigned to
+the duplicated key.
 
-Setting `options.strict = true` will fail-fast on such duplicate-key occurances
-and thus warn you upfront of possible lost information.
+Setting `options.errorOnDuplicatedKeys = true` will fail-fast on such duplicated
+keys occurance and thus warn you upfront of possible lost information.
 
 example:
 
 ```js
 var JSONB = require("when-json-met-bigint").JSONB;
-var JSONBstrict = require("when-json-met-bigint").JSONB({ strict: true });
+var JSONBeodk = require("when-json-met-bigint").JSONB({ strict: true });
 
 var dupkeys = '{ "dupkey": "value 1", "dupkey": "value 2"}';
 console.log("\n\nDuplicate Key test with both lenient and strict JSON parsing");
@@ -214,7 +214,7 @@ var works = JSONB.parse(dupkeys);
 console.log("JSON.parse(dupkeys).dupkey: %s", works.dupkey);
 var fails = "will stay like this";
 try {
-    fails = JSONBstrict.parse(dupkeys);
+    fails = JSONBeodk.parse(dupkeys);
     console.log("ERROR!! Should never get here");
 } catch (e) {
     console.log(
@@ -233,6 +233,13 @@ JSON.parse(dupkeys).dupkey: value 2
 Succesfully catched expected exception on duplicate keys: {"name":"SyntaxError","message":"Duplicate key \"dupkey\"","at":33,"text":"{ \"dupkey\": \"value 1\", \"dupkey\": \"value 2\"}"}
 
 ```
+
+==========
+
+-   options.strict, boolean, default false
+
+`options.errorOnBigIntDecimalOrScientific = true` &
+`options.errorOnDuplicatedKeys = true`
 
 ==========
 

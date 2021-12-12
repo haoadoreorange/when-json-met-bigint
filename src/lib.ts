@@ -7,9 +7,13 @@ export const CONSTRUCTOR_ACTIONS = [error, ignore, preserve] as const;
 export const PROTO_ACTIONS = CONSTRUCTOR_ACTIONS;
 export type JsonBigIntOptions = {
     /**
-     * @default 'false'
+     * @default false
      */
     errorOnBigIntDecimalOrScientific?: boolean;
+    /**
+     * @default false
+     */
+    errorOnDuplicatedKeys?: boolean;
     /**
      * @default false
      */

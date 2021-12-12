@@ -64,7 +64,7 @@ export const newParse = (
     // Default options.
     const p_options: JsonBigIntOptions = {
         errorOnBigIntDecimalOrScientific: false,
-        strict: false, // Not being strict means do not generate syntax errors for "duplicate key"
+        errorOnDuplicatedKeys: false,
         parseBigIntAsString: false,
         alwaysParseAsBigInt: false, // Toggles whether all numbers should be BigInt
         protoAction: preserve,
@@ -74,18 +74,20 @@ export const newParse = (
     // If there are options, then use them to override the default options.
     // These checks are for JS users with no type checking.
     if (p_user_options) {
-        if (p_user_options.errorOnBigIntDecimalOrScientific === true) {
-            p_options.errorOnBigIntDecimalOrScientific =
-                p_user_options.errorOnBigIntDecimalOrScientific;
+        if (
+            p_user_options.strict === true ||
+            p_user_options.errorOnBigIntDecimalOrScientific === true
+        ) {
+            p_options.errorOnBigIntDecimalOrScientific = true;
         }
-        if (p_user_options.strict === true) {
-            p_options.strict = p_user_options.strict;
+        if (p_user_options.strict === true || p_user_options.errorOnDuplicatedKeys === true) {
+            p_options.errorOnDuplicatedKeys = true;
         }
         if (p_user_options.parseBigIntAsString === true) {
-            p_options.parseBigIntAsString = p_user_options.parseBigIntAsString;
+            p_options.parseBigIntAsString = true;
         }
         if (p_user_options.alwaysParseAsBigInt === true) {
-            p_options.alwaysParseAsBigInt = p_user_options.alwaysParseAsBigInt;
+            p_options.alwaysParseAsBigInt = true;
         }
 
         if (p_user_options.protoAction) {
@@ -171,7 +173,10 @@ export const newParse = (
                 pSkipWhite();
                 pCurrentCharIs(`:`);
                 pNext();
-                if (p_options.strict === true && Object.hasOwnProperty.call(result, key)) {
+                if (
+                    p_options.errorOnDuplicatedKeys === true &&
+                    Object.hasOwnProperty.call(result, key)
+                ) {
                     pError(`Duplicate key "${key}"`);
                 }
 
