@@ -351,7 +351,7 @@ export const newParse = (
                     (is_fractional_or_scientific && !p_options.errorOnBigIntDecimalOrScientific)
                     ? result_number
                     : is_fractional_or_scientific
-                    ? pError(`Decimal and scientific notation cannot be BigInt`)
+                    ? pError(`Decimal and scientific notation cannot be bigint`)
                     : BigInt(result_string);
             } else {
                 let result_bigint;

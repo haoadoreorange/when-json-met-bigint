@@ -12,10 +12,10 @@ describe(`Force bigint on decimal and scientific notation`, () => {
         });
         expect(() => {
             JSONB.parse(`1.23`);
-        }).toThrow(`Decimal and scientific notation cannot be BigInt`);
+        }).toThrow(`Decimal and scientific notation cannot be bigint`);
         expect(() => {
             JSONB.parse(`1e23`);
-        }).toThrow(`Decimal and scientific notation cannot be BigInt`);
+        }).toThrow(`Decimal and scientific notation cannot be bigint`);
     });
 
     it(`should parse as number when bigintOnDecimalAndScientificAction === 'ignore'`, () => {

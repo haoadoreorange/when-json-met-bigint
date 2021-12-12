@@ -73,24 +73,24 @@ JSONB.stringify(JSONB.parse(input)): {"value":9223372036854775807,"v2":123}
 `JSONB.parse` support a 3rd option, which is a schema-like object. This is an
 ad-hoc solution for the limitation `o !== JSONB.parse(JSONB.stringify(o))`
 
-This limitation exists because JS treats `BigInt` and `Number` as 2 separate
+This limitation exists because JS treats `bigint` and `number` as 2 separate
 types which cannot be cooerced. The parser choses an appropriate type based on
 the size of the number in JSON string. This introduces 2 problems:
 
 -   As stated above, `JSONB.parse(JSONB.stringify(123n))` returns `123` because
     the number is small enough
 -   The type of one field is not consistent, for example one API can return a
-    response in which a field can sometimes be `BigInt` and other times be
-    `Number`
+    response in which a field can sometimes be `bigint` and other times be
+    `number`
 
-There's the option to parse all `Number` as `BigInt` but IMHO this isn't much
+There's the option to parse all `number` as `bigint` but IMHO this isn't much
 desirable. Libraries solved (2) by iterating the parsed result and enforce the
 type as you can see
 [here](https://github.com/theia-ide/tsp-typescript-client/pull/37). That PR has
 an interesting approach which this solution is inspired from.
 
 In order to overcome the limitation, we need an API for users to decide per case
-& per field whether it should be `BigInt` or `Number`. This API is exposed
+& per field whether it should be `bigint` or `number`. This API is exposed
 through a schema-like object. Its type is defined as following;
 
 ```typescript
@@ -105,15 +105,15 @@ type Schema =
 To put it simple, the schema-like argument is an object with fields and
 sub-fields being the fields and sub-fields of the expected parsed object,
 following the same structure, for which users want to specify whether to force
-it as `BigInt` or `Number`. `symbol` type keys are used for special meanings to
+it as `bigint` or `number`. `symbol` type keys are used for special meanings to
 avoid JSON keys clashing.
 
 Those fields can take 3 different values, a string 'number' or 'bigint' meaning
-it will be parsed as `Number` or `BigInt`, respectively. The 3rd possible value
-is a callback function `(n: number | bigint) => 'number' | 'bigint'`, with `n`
-being either `number` or `bigint` as being parsed by default depending on the
-size. Users for example can use this callback to `throw Error` in case the type
-is not what they're expecting.
+it will be parsed using `Number` or `BigInt`, respectively. The 3rd possible
+value is a callback function `(n: number | bigint) => 'number' | 'bigint'`, with
+`n` being either `number` or `bigint` as being parsed by default depending on
+the underlying JSON string. Users for example can use this callback to
+`throw Error` in case the type is not what they're expecting.
 
 To omit the key, aka define a schema for any key in an object, use the `symbol`
 value `Symbol.for('any')` as key, like this `{ [Symbol.for('any')]: 'bigint'}`.
@@ -154,7 +154,7 @@ JSONB.parse(`{"a": [1, 2, 3] }`, null, { a: [null, null, `bigint`] }); // return
 
 ### JSONB.stringify(value[, replacer[, space]])
 
-Full support out-of-the-box, stringifies `BigInt` as pure numbers (no quotes, no
+Full support out-of-the-box, stringifies `bigint` as pure numbers (no quotes, no
 `n`)
 
 ### Options
@@ -163,10 +163,10 @@ Full support out-of-the-box, stringifies `BigInt` as pure numbers (no quotes, no
 
 -   options.errorOnBigIntDecimalOrScientific, boolean, default false
 
-By default, decimal number or scientific notation cannot be parsed as `BigInt`,
-aka `BigInt("1.23")` or `BigInt("1e23")` will throw. This option controls what
-to do when forcing `BigInt` through schema or `option.alwaysParseAsBigInt` upon
-such value.
+By default, decimal number or scientific notation cannot be parsed using
+`BigInt`, aka `BigInt("1.23")` or `BigInt("1e23")` will throw. This option
+controls what to do when forcing `BigInt` through schema or
+`option.alwaysParseAsBigInt` upon such value.
 
 if not specified, then the `option.alwaysParseAsBigInt` or schema will be
 ignored for such value and it is parsed as `number`. Otherwise it will throw.
@@ -184,7 +184,7 @@ JSONB.parse('{ "decimal": 1.23, "scientific": 1e23 }');
 Output
 
 ```
-throw 'Decimal and scientific notation cannot be BigInt'
+throw 'Decimal and scientific notation cannot be bigint'
 
 ```
 
@@ -244,12 +244,12 @@ Succesfully catched expected exception on duplicate keys: {"name":"SyntaxError",
 
 -   options.alwaysParseAsBigInt, boolean, default false
 
-Specify if all numbers should be stored as `BigInt`. **Careful** that this
+Specify if all numbers should be stored as `bigint`. **Careful** that this
 option can be overwritten by a schema if present.
 
 Note that this is a dangerous behavior as it breaks the default functionality of
 being able to convert back-and-forth without data type changes (as this will
-convert all Number to be-and-stay BigInt)
+convert all `number` to be-and-stay `bigint`)
 
 example:
 
@@ -259,7 +259,7 @@ var JSONBalways = require("when-json-met-bigint").JSONB({
     alwaysParseAsBigInt: true,
 });
 var key = '{ "key": 123 }'; // there is no need for BigInt by default, but we're forcing it
-console.log(`\n\nStoring the Number as a BigInt, instead of a Number`);
+console.log(`\n\nStoring the number as a bigint, instead of a number`);
 console.log("Input:", key);
 var normal = JSONB.parse(key);
 var always = JSONBalways.parse(key);
@@ -273,7 +273,7 @@ console.log(
 Output
 
 ```
-Storing the Number as a BigInt, instead of a Number
+Storing the number as a bigint, instead of a number
 Input: { "key": 123 }
 Default type: number, With option type: bigint
 
@@ -283,7 +283,7 @@ Default type: number, With option type: bigint
 
 -   options.parseBigIntAsString, boolean, default false
 
-Specify if `BigInt` should be stored in the object as a `string`, rather than
+Specify if `bigint` should be stored in the object using `String`, rather than
 the default `BigInt`. This option is applied if the type **AFTER ALL OPTIONS &
 SCHEMA APPLIED** is `bigint`. That is, if used with
 `options.alwaysParseAsBigInt === true`, **ALL** number will be parsed as
@@ -291,7 +291,7 @@ SCHEMA APPLIED** is `bigint`. That is, if used with
 
 Note that this is a dangerous behavior as it breaks the default functionality of
 being able to convert back-and-forth without data type changes (as this will
-convert all BigInts to be-and-stay strings).
+convert all bigint to be-and-stay string).
 
 example:
 
@@ -301,7 +301,7 @@ var JSONBstring = require("when-json-met-bigint").JSONB({
     parseBigIntAsString: true,
 });
 var key = '{ "key": 1234567890123456789 }';
-console.log("\n\nStoring the BigInt as a string, instead of a BigInt");
+console.log("\n\nStoring the bigint as a string, instead of a bigint");
 console.log("Input:", key);
 var withInt = JSONB.parse(key);
 var withString = JSONBstring.parse(key);
@@ -315,7 +315,7 @@ console.log(
 Output
 
 ```
-Storing the BigInt as a string, instead of a BigInt
+Storing the bigint as a string, instead of a bigint
 Input: { "key": 1234567890123456789 }
 Default type: object, With option type: string
 
