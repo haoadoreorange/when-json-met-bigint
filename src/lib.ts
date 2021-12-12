@@ -1,7 +1,10 @@
+export const error = `error`;
+export const ignore = `ignore`;
+export const preserve = `preserve`;
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export const CONSTRUCTOR_ACTIONS = [`error`, `ignore`, `preserve`] as const;
+export const CONSTRUCTOR_ACTIONS = [error, ignore, preserve] as const;
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export const PROTO_ACTIONS = [`error`, `ignore`, `preserve`] as const;
+export const PROTO_ACTIONS = CONSTRUCTOR_ACTIONS;
 export type JsonBigIntOptions = {
     /**
      * @default false
@@ -16,11 +19,11 @@ export type JsonBigIntOptions = {
      */
     alwaysParseAsBigInt?: boolean;
     /**
-     * @default 'error'
+     * @default 'preserve'
      */
     protoAction?: typeof PROTO_ACTIONS[number];
     /**
-     * @default 'error'
+     * @default 'preserve'
      */
     constructorAction?: typeof CONSTRUCTOR_ACTIONS[number];
 };

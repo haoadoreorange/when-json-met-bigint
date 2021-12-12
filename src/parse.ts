@@ -1,5 +1,14 @@
-import { JsonBigIntOptions, PROTO_ACTIONS, CONSTRUCTOR_ACTIONS } from "lib";
+import {
+    JsonBigIntOptions,
+    PROTO_ACTIONS,
+    CONSTRUCTOR_ACTIONS,
+    error,
+    ignore,
+    preserve,
+} from "lib";
 
+const bigint = `bigint`;
+const number = `number`;
 const isNonNullObject = (o: unknown): o is Record<string, unknown> | unknown[] => {
     return typeof o === `object` && o !== null;
 };
@@ -57,8 +66,8 @@ export const newParse = (
         strict: false, // Not being strict means do not generate syntax errors for "duplicate key"
         parseBigIntAsString: false,
         alwaysParseAsBigInt: false, // Toggles whether all numbers should be BigInt
-        protoAction: `preserve`,
-        constructorAction: `preserve`,
+        protoAction: preserve,
+        constructorAction: preserve,
     };
 
     // If there are options, then use them to override the default options.
@@ -135,7 +144,7 @@ export const newParse = (
     const pObject = (schema?: Schema) => {
         // Parse an object value.
 
-        const result = (p_options.protoAction === `preserve` ? Object.create(null) : {}) as Record<
+        const result = (p_options.protoAction === preserve ? Object.create(null) : {}) as Record<
             string,
             unknown
         >;
@@ -162,17 +171,17 @@ export const newParse = (
                 }
 
                 if (SUSPECT_PROTO_RX.test(key) === true) {
-                    if (p_options.protoAction === `error`) {
+                    if (p_options.protoAction === error) {
                         pError(`Object contains forbidden prototype property`);
-                    } else if (p_options.protoAction === `ignore`) {
+                    } else if (p_options.protoAction === ignore) {
                         pJsonValue();
                     } else {
                         result[key] = pJsonValue(sub_schema);
                     }
                 } else if (SUSPECT_CONSTRUCTOR_RX.test(key) === true) {
-                    if (p_options.constructorAction === `error`) {
+                    if (p_options.constructorAction === error) {
                         pError(`Object contains forbidden constructor property`);
-                    } else if (p_options.constructorAction === `ignore`) {
+                    } else if (p_options.constructorAction === ignore) {
                         pJsonValue();
                     } else {
                         result[key] = pJsonValue(sub_schema);
@@ -185,7 +194,7 @@ export const newParse = (
                 // @ts-expect-error next() change ch
                 if (p_current_char === `}`) {
                     pNext();
-                    if (p_options.protoAction === `preserve`)
+                    if (p_options.protoAction === preserve)
                         Object.setPrototypeOf(result, Object.prototype);
                     return result;
                 }
@@ -324,7 +333,7 @@ export const newParse = (
         } else {
             if (Number.isSafeInteger(result_number)) {
                 if (typeof schema === `function`) schema = schema(result_number);
-                return (p_options.alwaysParseAsBigInt && schema !== `number`) || schema === `bigint`
+                return (p_options.alwaysParseAsBigInt && schema !== number) || schema === bigint
                     ? BigInt(result_number)
                     : result_number;
             } else {
@@ -336,7 +345,7 @@ export const newParse = (
                     result_bigint = BigInt(result_string);
                     schema = schema(result_bigint);
                 }
-                if (schema === `number`) return result_number;
+                if (schema === number) return result_number;
                 return p_options.parseBigIntAsString
                     ? result_string
                     : result_bigint || BigInt(result_string);

@@ -99,14 +99,15 @@ type NumberOrBigInt = `number` | `bigint`;
 type Schema =
     | NumberOrBigInt
     | ((n: number | bigint) => NumberOrBigInt)
-    | { [key: string]: Schema }
+    | { [key: string | symbol]: Schema }
     | (Schema | null)[];
 ```
 
 To put it simple, the schema-like argument is an object with fields and
 sub-fields being the fields and sub-fields of the expected parsed object,
 following the same structure, for which users want to specify whether to force
-it as `BigInt` or `Number`.
+it as `BigInt` or `Number`. `symbol` type keys are used for special meanings to
+avoid JSON keys clashing.
 
 Those fields can take 3 different values, a string 'number' or 'bigint' meaning
 it will be parsed as `Number` or `BigInt`, respectively. The 3rd possible value
@@ -114,6 +115,13 @@ is a callback function `(n: number | bigint) => 'number' | 'bigint'`, with `n`
 being either `number` or `bigint` as being parsed by default depending on the
 size. Users for example can use this callback to `throw Error` in case the type
 is not what they're expecting.
+
+To omit the key, aka define a schema for any key in an object, use the `symbol`
+value `Symbol.for('any')` as key, like this `{ [Symbol.for('any')]: 'bigint'}`.
+You **MUST NOT** use `Symbol('any')` since `Symbol('any')` !==
+`Symbol.for('any')`, which is used to index the schema. The
+`Symbol.for('any')`'s schema, if presents, is only used when the specified key's
+one does not exist (for any `key` such that `schema[key] === undefined`).
 
 For `Array` in the schema-like object, a single item array is treated as `T[]`,
 that is the item will be the schema for all items in the parsed array. An array
@@ -156,7 +164,7 @@ Full support out-of-the-box, stringifies `BigInt` as pure numbers (no quotes, no
 
 -   options.strict, boolean, default false
 
-Specifies the parsing should be "strict" towards reporting duplicate-keys in the
+Specify the parsing should be "strict" towards reporting duplicate-keys in the
 parsed string. The default follows what is allowed in standard json and
 resembles the behavior of JSON.parse, but overwrites any previous values with
 the last one assigned to the duplicate-key.
@@ -199,48 +207,10 @@ Succesfully catched expected exception on duplicate keys: {"name":"SyntaxError",
 
 ==========
 
--   options.parseBigIntAsString, boolean, default false
-
-Specifies if `BigInt` should be stored in the object as a `string`, rather than
-the default `BigInt`.
-
-Note that this is a dangerous behavior as it breaks the default functionality of
-being able to convert back-and-forth without data type changes (as this will
-convert all BigInts to be-and-stay strings).
-
-example:
-
-```js
-var JSONB = require("when-json-met-bigint").JSONB;
-var JSONBstring = require("when-json-met-bigint").JSONB({
-    parseBigIntAsString: true,
-});
-var key = '{ "key": 1234567890123456789 }';
-console.log("\n\nStoring the BigInt as a string, instead of a BigInt");
-console.log("Input:", key);
-var withInt = JSONB.parse(key);
-var withString = JSONBstring.parse(key);
-console.log(
-    "Default type: %s, With option type: %s",
-    typeof withInt.key,
-    typeof withString.key,
-);
-```
-
-Output
-
-```
-Storing the BigInt as a string, instead of a BigInt
-Input: { "key": 1234567890123456789 }
-Default type: object, With option type: string
-
-```
-
-==========
-
 -   options.alwaysParseAsBigInt, boolean, default false
 
-Specifies if all numbers should be stored as BigInt.
+Specify if all numbers should be stored as `BigInt`. **Careful** that this
+option can be overwritten by a schema if present.
 
 Note that this is a dangerous behavior as it breaks the default functionality of
 being able to convert back-and-forth without data type changes (as this will
@@ -276,12 +246,54 @@ Default type: number, With option type: bigint
 
 ==========
 
+-   options.parseBigIntAsString, boolean, default false
+
+Specify if `BigInt` should be stored in the object as a `string`, rather than
+the default `BigInt`. This option is applied if the type **AFTER ALL OPTIONS &
+SCHEMA APPLIED** is `bigint`. That is, if used with
+`options.alwaysParseAsBigInt === true`, **ALL** number will be parsed as
+`string`.
+
+Note that this is a dangerous behavior as it breaks the default functionality of
+being able to convert back-and-forth without data type changes (as this will
+convert all BigInts to be-and-stay strings).
+
+example:
+
+```js
+var JSONB = require("when-json-met-bigint").JSONB;
+var JSONBstring = require("when-json-met-bigint").JSONB({
+    parseBigIntAsString: true,
+});
+var key = '{ "key": 1234567890123456789 }';
+console.log("\n\nStoring the BigInt as a string, instead of a BigInt");
+console.log("Input:", key);
+var withInt = JSONB.parse(key);
+var withString = JSONBstring.parse(key);
+console.log(
+    "Default type: %s, With option type: %s",
+    typeof withInt.key,
+    typeof withString.key,
+);
+```
+
+Output
+
+```
+Storing the BigInt as a string, instead of a BigInt
+Input: { "key": 1234567890123456789 }
+Default type: object, With option type: string
+
+```
+
+==========
+
 -   options.protoAction, boolean, default: "preserve". Possible values: "error",
     "ignore", "preserve"
 -   options.constructorAction, boolean, default: "preserve". Possible values:
     "error", "ignore", "preserve"
 
-Controls how `__proto__` and `constructor` properties are treated. If set to
+Control how `__proto__` and `constructor` properties are treated. If set to
 "error" they are not allowed and parse() call will throw an error. If set to
 "ignore" the prroperty and its value is skipped from parsing and object
 building.
