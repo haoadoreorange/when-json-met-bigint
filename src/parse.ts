@@ -323,12 +323,12 @@ export const newParse = (
             return is_positive ? Infinity : -Infinity;
         } else {
             if (Number.isSafeInteger(result_number)) {
-                return p_options.alwaysParseAsBigInt ||
-                    (typeof schema === `function` ? schema(result_number) : schema) === `bigint`
+                if (typeof schema === `function`) schema = schema(result_number);
+                return (p_options.alwaysParseAsBigInt && schema !== `number`) || schema === `bigint`
                     ? BigInt(result_number)
                     : result_number;
             } else {
-                // Number with fractional part should be treated as number(double)
+                // Number with fractional part is currently always number
                 // including big integers in scientific notation, i.e 1.79e+308
                 if (/[.eE]/.test(result_string)) return result_number;
                 let result_bigint;

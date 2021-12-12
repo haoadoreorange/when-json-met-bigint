@@ -247,7 +247,7 @@ Default type: object, With option type: string
 
 -   options.alwaysParseAsBigInt, boolean, default false
 
-Specifies if all numbers should be stored as BigInt.
+Specifies if all numbers should be stored as `BigInt`. _Note_: This option is overwritten if a schema is present.
 
 Note that this is a dangerous behavior as it breaks the default functionality of
 being able to convert back-and-forth without data type changes (as this will

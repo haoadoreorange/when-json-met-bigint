@@ -4,8 +4,8 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { JSONB as JSB } from "index";
 
-describe(`Testing parser schema`, function () {
-    it(`should respect schema`, function () {
+describe(`Testing parser schema`, () => {
+    it(`should respect schema`, () => {
         const JSONB = JSB;
         expect(typeof JSONB.parse(`123`, null, `bigint`)).toEqual(`bigint`);
         expect(typeof JSONB.parse(`{"a": {"b": 123} }`, null, { a: { b: `bigint` } }).a.b).toEqual(
@@ -43,5 +43,10 @@ describe(`Testing parser schema`, function () {
 
         const o5 = JSONB.parse(`{"a": [1, 2, 3] }`, null, { a: [null, null, `bigint`] });
         expect(typeof o5.a[2]).toEqual(`bigint`);
+    });
+
+    it(`should overwrite alwaysParseAsBigInt`, () => {
+        const JSONB = JSB({ alwaysParseAsBigInt: true });
+        expect(typeof JSONB.parse(`123`, null, `number`)).toEqual(`number`);
     });
 });
