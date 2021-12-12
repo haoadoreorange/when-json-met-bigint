@@ -7,11 +7,11 @@ import {
     preserve,
 } from "lib";
 
-const bigint = `bigint`;
-const number = `number`;
 const isNonNullObject = (o: unknown): o is Record<string, unknown> | unknown[] => {
     return typeof o === `object` && o !== null;
 };
+const bigint = `bigint`;
+const number = `number`;
 
 // regexpxs extracted from
 // (c) BSD-3-Clause
@@ -63,6 +63,7 @@ export const newParse = (
 
     // Default options.
     const p_options: JsonBigIntOptions = {
+        errorOnBigIntDecimalOrScientific: false,
         strict: false, // Not being strict means do not generate syntax errors for "duplicate key"
         parseBigIntAsString: false,
         alwaysParseAsBigInt: false, // Toggles whether all numbers should be BigInt
@@ -73,6 +74,10 @@ export const newParse = (
     // If there are options, then use them to override the default options.
     // These checks are for JS users with no type checking.
     if (p_user_options) {
+        if (p_user_options.errorOnBigIntDecimalOrScientific === true) {
+            p_options.errorOnBigIntDecimalOrScientific =
+                p_user_options.errorOnBigIntDecimalOrScientific;
+        }
         if (p_user_options.strict === true) {
             p_options.strict = p_user_options.strict;
         }
@@ -331,15 +336,19 @@ export const newParse = (
         if (!Number.isFinite(result_number)) {
             return is_positive ? Infinity : -Infinity;
         } else {
-            if (Number.isSafeInteger(result_number)) {
+            // Decimal or scientific notation
+            // cannot be BigInt, aka BigInt("1.79e+308") will throw.
+            const is_fractional_or_scientific = /[.eE]/.test(result_string);
+            if (Number.isSafeInteger(result_number) || is_fractional_or_scientific) {
                 if (typeof schema === `function`) schema = schema(result_number);
-                return (p_options.alwaysParseAsBigInt && schema !== number) || schema === bigint
-                    ? BigInt(result_number)
-                    : result_number;
+                return schema === number ||
+                    (!p_options.alwaysParseAsBigInt && schema !== bigint) ||
+                    (is_fractional_or_scientific && !p_options.errorOnBigIntDecimalOrScientific)
+                    ? result_number
+                    : is_fractional_or_scientific
+                    ? pError(`Decimal and scientific notation cannot be BigInt`)
+                    : BigInt(result_string);
             } else {
-                // Number with fractional part is currently always number
-                // including big integers in scientific notation, i.e 1.79e+308
-                if (/[.eE]/.test(result_string)) return result_number;
                 let result_bigint;
                 if (typeof schema === `function`) {
                     result_bigint = BigInt(result_string);

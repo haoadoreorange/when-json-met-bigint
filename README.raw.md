@@ -161,6 +161,35 @@ Full support out-of-the-box, stringifies `BigInt` as pure numbers (no quotes, no
 
 ==========
 
+-   options.errorOnBigIntDecimalOrScientific, boolean, default false
+
+By default, decimal number or scientific notation cannot be parsed as `BigInt`,
+aka `BigInt("1.23")` or `BigInt("1e23")` will throw. This option controls what
+to do when forcing `BigInt` through schema or `option.alwaysParseAsBigInt` upon
+such value.
+
+if not specified, then the `option.alwaysParseAsBigInt` or schema will be
+ignored for such value and it is parsed as `number`. Otherwise it will throw.
+
+example:
+
+```js
+var JSONB = require("when-json-met-bigint").JSONB({
+    alwaysParseAsBigInt: true,
+    errorOnBigIntDecimalOrScientific: true,
+});
+JSONB.parse('{ "decimal": 1.23, "scientific": 1e23 }');
+```
+
+Output
+
+```
+throw 'Decimal and scientific notation cannot be BigInt'
+
+```
+
+==========
+
 -   options.strict, boolean, default false
 
 Specify the parsing should be "strict" towards reporting duplicate-keys in the
@@ -287,10 +316,10 @@ Default type: object, With option type: string
 
 ==========
 
--   options.protoAction, boolean, default: "preserve". Possible values: "error",
+-   options.protoAction, default: "preserve". Possible values: "error",
     "ignore", "preserve"
--   options.constructorAction, boolean, default: "preserve". Possible values:
-    "error", "ignore", "preserve"
+-   options.constructorAction, default: "preserve". Possible values: "error",
+    "ignore", "preserve"
 
 Control how `__proto__` and `constructor` properties are treated. If set to
 "error" they are not allowed and parse() call will throw an error. If set to
