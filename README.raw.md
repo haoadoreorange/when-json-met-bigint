@@ -14,9 +14,14 @@ Compare to [json-bigint](https://github.com/sidorares/json-bigint),
 custom behaviours are opt-in through options (e.g `options.protoAction`
 'preserve' instead of 'error' by default).
 
+Implemented following ES2022 `JSON.parse/stringify`
+[specification](https://tc39.es/ecma262/#sec-json.parse).
+
+All exports are named to avoid CommonJS/ESM default export complication.
+
 ==========
 
-`JSON.parse/stringify` with `BigInt` support. Based on Douglas Crockford
+`JSON.parse/stringify` with ES2020 `BigInt` support. Based on Douglas Crockford
 [JSON.js](https://github.com/douglascrockford/JSON-js) and
 [json-bigint](https://github.com/sidorares/json-bigint).
 

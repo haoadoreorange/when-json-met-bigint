@@ -15,9 +15,14 @@ Compare to [json-bigint](https://github.com/sidorares/json-bigint),
 custom behaviours are opt-in through options (e.g `options.protoAction`
 'preserve' instead of 'error' by default).
 
+Implemented following ES2022 `JSON.parse/stringify`
+[specification](https://tc39.es/ecma262/#sec-json.parse).
+
+All exports are named to avoid CommonJS/ESM default export complication.
+
 ==========
 
-`JSON.parse/stringify` with `BigInt` support. Based on Douglas Crockford
+`JSON.parse/stringify` with ES2020 `BigInt` support. Based on Douglas Crockford
 [JSON.js](https://github.com/douglascrockford/JSON-js) and
 [json-bigint](https://github.com/sidorares/json-bigint).
 
@@ -411,9 +416,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>3</td><td>3.14</td><td>0</td>
+          <td>JSON</td><td>3</td><td>1.06</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>2</td><td>5.02</td><td>33.33</td>
+          <td>when-json-met-bigint</td><td>2</td><td>3.51</td><td>33.33</td>
         </tr>
       </tbody>
     </table>
@@ -439,9 +444,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>1.4</td><td>2.97</td><td>0</td>
+          <td>JSON</td><td>1.4</td><td>3.57</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>1</td><td>3.37</td><td>28.57</td>
+          <td>when-json-met-bigint</td><td>1</td><td>3.99</td><td>28.57</td>
         </tr>
       </tbody>
     </table>
@@ -467,9 +472,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>171</td><td>2.25</td><td>0</td>
+          <td>JSON</td><td>172</td><td>1.3</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>115</td><td>0.79</td><td>32.75</td>
+          <td>when-json-met-bigint</td><td>114</td><td>1.34</td><td>33.72</td>
         </tr>
       </tbody>
     </table>
@@ -495,9 +500,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>6</td><td>2.55</td><td>0</td>
+          <td>JSON</td><td>6</td><td>2.35</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>4</td><td>5.52</td><td>33.33</td>
+          <td>when-json-met-bigint</td><td>4</td><td>0.87</td><td>33.33</td>
         </tr>
       </tbody>
     </table>
@@ -523,9 +528,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>2.5</td><td>1.53</td><td>0</td>
+          <td>JSON</td><td>2.5</td><td>2.68</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>2.2</td><td>2.37</td><td>12</td>
+          <td>when-json-met-bigint</td><td>2.1</td><td>2.21</td><td>16</td>
         </tr>
       </tbody>
     </table>
@@ -551,9 +556,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>292</td><td>1.92</td><td>0</td>
+          <td>JSON</td><td>295</td><td>1.21</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>264</td><td>1.07</td><td>9.59</td>
+          <td>when-json-met-bigint</td><td>263</td><td>1.83</td><td>10.85</td>
         </tr>
       </tbody>
     </table>
