@@ -7,8 +7,8 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { JSONB } from "index";
 
-describe(`__proto__ and constructor assignment`, function () {
-    it(`should throw when parse "01" "-01" "1e"`, () => {
+describe(`Follow default JSON API`, function () {
+    it(`throw when parse "01" "-01" "1e"`, () => {
         expect(() => {
             JSONB.parse(`01`);
         }).toThrow(`Bad number`);
@@ -20,14 +20,23 @@ describe(`__proto__ and constructor assignment`, function () {
         }).toThrow(`Bad number`);
     });
 
-    it(`should parse number bigger than infinity limit (> 1.797693134862315E+308) as Infinity`, () => {
+    it(`throw on cyclical structure`, () => {
+        const o = { a: 1 };
+        // @ts-expect-error test
+        o.b = o;
+        expect(() => {
+            JSONB.stringify(o);
+        }).toThrow(`cyclic object value`);
+    });
+
+    it(`parse number bigger than infinity limit (> 1.797693134862315E+308) as Infinity`, () => {
         expect(JSONB.parse(`1.797693134862316E+308`)).toEqual(Infinity);
     });
-    it(`should parse number smaller than infinity limit (< 1.797693134862315E+308) as -Infinity`, () => {
+    it(`parse number smaller than infinity limit (< 1.797693134862315E+308) as -Infinity`, () => {
         expect(JSONB.parse(`-1.797693134862316E+308`)).toEqual(-Infinity);
     });
 
-    it(`should set __proto__ property but not prototype`, () => {
+    it(`set __proto__ property but not prototype`, () => {
         const obj = JSONB.parse(`{ "__proto__": { "admin": true } }`);
         expect(obj.admin).not.toEqual(true);
     });
@@ -57,7 +66,18 @@ describe(`__proto__ and constructor assignment`, function () {
         expect(obj).toEqual(JSONB.parse(JSON.stringify(obj)));
     });
 
-    it(`equals default JSON on non-bigint object`, () => {
+    it(`equals default JSON stringify on non-bigint object`, () => {
         expect(JSONB.stringify(obj)).toEqual(JSON.stringify(obj));
+    });
+
+    it(`slice if space.length > 10`, () => {
+        expect(JSONB.stringify({ a: 123 }, null, `0123456789xxxxx`)).toEqual(
+            `{\n0123456789"a": 123\n}`,
+        );
+    });
+
+    it(`accept Number & String`, () => {
+        expect(JSONB.stringify(new Number(123))).toEqual(`123`);
+        expect(JSONB.stringify(new String(`abc`))).toEqual(`"abc"`);
     });
 });

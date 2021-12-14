@@ -3,6 +3,10 @@ const isObjectWithToJSOnImplemented = <T>(o: T): o is T & { toJSON: (key?: strin
     return typeof o === `object` && o !== null && typeof (o as any).toJSON === `function`;
 };
 
+// eslint-disable-next-line @typescript-eslint/ban-types
+const toPrimitive = <T>(o: T) =>
+    o instanceof Number ? Number(o) : o instanceof String ? String(o) : o;
+
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const ESCAPABLE =
     // eslint-disable-next-line no-control-regex, no-misleading-character-class
@@ -44,8 +48,13 @@ export const stringify = ((): typeof JSON.stringify => {
     // This immediately invoked function returns a function that stringify JS
     // data structure.
 
-    let s_indent: string, // JSON string indentation
-        s_replacer: ((this: any, key: string, value: any) => any) | (string | number)[] | null;
+    // Original spec use stack, but stack is slow and not necessary in this case
+    // use Set instead
+    const s_stack = new Set();
+    let s_indent: string, // current indentation
+        s_gap: string, // JSON indentation string
+        sReplacer: ((this: any, key: string, value: any) => any) | null | undefined;
+    const s_replacer = new Set<string>();
 
     const sStringify = <T extends Record<string, unknown> | unknown[]>(
         key_or_index: T extends Record<string, unknown> ? keyof T : number,
@@ -56,6 +65,8 @@ export const stringify = ((): typeof JSON.stringify => {
         // @ts-expect-error index array with string
         let value = object_or_array[key_or_index] as unknown;
 
+        const last_gap = s_indent; // stepback
+
         // If the value has toJSON method, call it.
         if (isObjectWithToJSOnImplemented(value)) {
             value = value.toJSON();
@@ -63,8 +74,8 @@ export const stringify = ((): typeof JSON.stringify => {
 
         // If we were called with a replacer function, then call the replacer to
         // obtain a replacement value.
-        if (typeof s_replacer === `function`) {
-            value = s_replacer.call(object_or_array, key_or_index.toString(), value);
+        if (typeof sReplacer === `function`) {
+            value = sReplacer.call(object_or_array, key_or_index.toString(), value);
         }
 
         // What happens next depends on the value's type.
@@ -87,6 +98,10 @@ export const stringify = ((): typeof JSON.stringify => {
                     return `null`;
                 }
 
+                if (s_stack.has(value)) throw new TypeError(`cyclic object value`);
+                s_stack.add(value);
+                s_indent += s_gap;
+
                 if (Array.isArray(value)) {
                     // Make an array to hold the partial results of stringifying this object value.
                     // The value is an array. Stringify every element. Use null as a placeholder
@@ -97,51 +112,78 @@ export const stringify = ((): typeof JSON.stringify => {
 
                     // Join all of the elements together, separated with commas, and wrap them in
                     // brackets.
-                    return partial.length === 0
-                        ? `[]`
-                        : s_indent
-                        ? `[\n` + s_indent + partial.join(`,\n` + s_indent) + `\n` + `]`
-                        : `[` + partial.join(`,`) + `]`;
+                    const result =
+                        partial.length === 0
+                            ? `[]`
+                            : s_indent
+                            ? `[\n` +
+                              s_indent +
+                              partial.join(`,\n` + s_indent) +
+                              `\n` +
+                              last_gap +
+                              `]`
+                            : `[` + partial.join(`,`) + `]`;
+                    s_stack.delete(value);
+                    s_indent = last_gap;
+                    return result;
                 }
 
                 const partial: string[] = [];
-                (Array.isArray(s_replacer) ? s_replacer : Object.keys(value)).forEach((key) => {
-                    if (typeof key === `string` || typeof key === `number`) {
-                        const key_string = key.toString();
-                        const v = sStringify(key_string, value as Record<string, unknown>);
-                        if (v) {
-                            partial.push(quote(key_string) + (s_indent ? `: ` : `:`) + v);
-                        }
+                (s_replacer.size > 0 ? s_replacer : Object.keys(value)).forEach((key) => {
+                    const v = sStringify(key, value as Record<string, unknown>);
+                    if (v) {
+                        partial.push(quote(key) + (s_gap ? `: ` : `:`) + v);
                     }
                 });
 
                 // Join all of the member texts together, separated with commas,
                 // and wrap them in braces.
-                return partial.length === 0
-                    ? `{}`
-                    : s_indent
-                    ? `{\n` + s_indent + partial.join(`,\n` + s_indent) + `\n` + `}`
-                    : `{` + partial.join(`,`) + `}`;
+                const result =
+                    partial.length === 0
+                        ? `{}`
+                        : s_indent
+                        ? `{\n` + s_indent + partial.join(`,\n` + s_indent) + `\n` + last_gap + `}`
+                        : `{` + partial.join(`,`) + `}`;
+                s_stack.delete(value);
+                s_indent = last_gap;
+                return result;
             }
         }
     };
 
     // Return the stringify function.
-    return (value: unknown, replacer, space) => {
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    return (value: unknown, replacer?, space?: string | number | Number | String) => {
+        value = toPrimitive(value);
         // Reset state.
+        s_stack.clear();
+
+        s_indent = ``;
         // If the space parameter is a number, make an indent string containing that
         // many spaces.
         // If the space parameter is a string, it will be used as the indent string.
-        s_indent =
-            typeof space === `number` && space >= 0
+        space = toPrimitive(space);
+        s_gap =
+            typeof space === `number` && space > 0
                 ? new Array(space + 1).join(` `)
-                : typeof space === `string`
+                : typeof space !== `string`
+                ? ``
+                : space.length <= 10
                 ? space
-                : ``;
+                : space.slice(0, 10);
 
-        // If there is a replacer, it must be a function or an array.
-        if (typeof replacer === `function` || Array.isArray(replacer)) s_replacer = replacer;
-        else s_replacer = null;
+        s_replacer.clear();
+        if (Array.isArray(replacer)) {
+            sReplacer = null;
+            if (typeof value === `object`)
+                replacer.forEach((e) => {
+                    const key = toPrimitive(e);
+                    if (typeof key === `string` || typeof key === `number`) {
+                        const key_string = key.toString();
+                        if (!s_replacer.has(key_string)) s_replacer.add(key_string);
+                    }
+                });
+        } else sReplacer = replacer;
 
         // Make a fake root object containing our value under the key of ''.
         // Return the result of stringifying the value.
