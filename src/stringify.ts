@@ -1,10 +1,13 @@
+import { isNonNullObject } from "lib";
+
 const isObjectWithToJSOnImplemented = <T>(o: T): o is T & { toJSON: (key?: string) => unknown } => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
     return typeof o === `object` && o !== null && typeof (o as any).toJSON === `function`;
 };
 
+// Number -> number & String -> string
 // eslint-disable-next-line @typescript-eslint/ban-types
-const toPrimitive = <T>(o: T) =>
+const toPrimitive = <T>(o: Number | String | T) =>
     o instanceof Number ? Number(o) : o instanceof String ? String(o) : o;
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -42,9 +45,19 @@ const quote = (s: string) => {
         : `"` + s + `"`;
 };
 
+type ReplacerFn = (this: any, key: string, value: any) => any;
+// eslint-disable-next-line @typescript-eslint/ban-types
+type Stringified<V> = V extends symbol | Function ? undefined : string;
+type Stringify = <V>(
+    value: V,
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    replacer?: (number | Number | string | String)[] | ReplacerFn | null,
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    space?: Parameters<typeof JSON.stringify>[2] | Number | String,
+) => Stringified<V>;
 // Closure for internal state variables.
 // Serializer's internal state variables are prefixed with s_, methods are prefixed with s.
-export const stringify = ((): typeof JSON.stringify => {
+export const stringify = ((): Stringify => {
     // This immediately invoked function returns a function that stringify JS
     // data structure.
 
@@ -53,7 +66,7 @@ export const stringify = ((): typeof JSON.stringify => {
     const s_stack = new Set();
     let s_indent: string, // current indentation
         s_gap: string, // JSON indentation string
-        sReplacer: ((this: any, key: string, value: any) => any) | null | undefined;
+        sReplacer: ReplacerFn | null | undefined;
     const s_replacer = new Set<string>();
 
     const sStringify = <T extends Record<string, unknown> | unknown[]>(
@@ -64,8 +77,6 @@ export const stringify = ((): typeof JSON.stringify => {
 
         // @ts-expect-error index array with string
         let value = object_or_array[key_or_index] as unknown;
-
-        const last_gap = s_indent; // stepback
 
         // If the value has toJSON method, call it.
         if (isObjectWithToJSOnImplemented(value)) {
@@ -100,6 +111,7 @@ export const stringify = ((): typeof JSON.stringify => {
 
                 if (s_stack.has(value)) throw new TypeError(`cyclic object value`);
                 s_stack.add(value);
+                const last_gap = s_indent; // stepback
                 s_indent += s_gap;
 
                 if (Array.isArray(value)) {
@@ -152,9 +164,8 @@ export const stringify = ((): typeof JSON.stringify => {
     };
 
     // Return the stringify function.
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    return (value: unknown, replacer?, space?: string | number | Number | String) => {
-        value = toPrimitive(value);
+    return (value, replacer, space) => {
+        value = toPrimitive(value) as typeof value;
         // Reset state.
         s_stack.clear();
 
@@ -162,25 +173,26 @@ export const stringify = ((): typeof JSON.stringify => {
         // If the space parameter is a number, make an indent string containing that
         // many spaces.
         // If the space parameter is a string, it will be used as the indent string.
-        space = toPrimitive(space);
+        const primitive_space = toPrimitive(space);
         s_gap =
-            typeof space === `number` && space > 0
-                ? new Array(space + 1).join(` `)
-                : typeof space !== `string`
+            typeof primitive_space === `number` && primitive_space > 0
+                ? new Array(primitive_space + 1).join(` `)
+                : typeof primitive_space !== `string`
                 ? ``
-                : space.length <= 10
-                ? space
-                : space.slice(0, 10);
+                : primitive_space.length > 10
+                ? primitive_space.slice(0, 10)
+                : primitive_space;
 
         s_replacer.clear();
         if (Array.isArray(replacer)) {
             sReplacer = null;
-            if (typeof value === `object`)
+            if (isNonNullObject(value))
                 replacer.forEach((e) => {
-                    const key = toPrimitive(e);
-                    if (typeof key === `string` || typeof key === `number`) {
-                        const key_string = key.toString();
-                        if (!s_replacer.has(key_string)) s_replacer.add(key_string);
+                    const key_string = e?.toString();
+                    if (!s_replacer.has(key_string) && key_string) {
+                        const key = toPrimitive(e);
+                        if (typeof key === `string` || typeof key === `number`)
+                            s_replacer.add(key_string);
                     }
                 });
         } else sReplacer = replacer;
@@ -189,6 +201,6 @@ export const stringify = ((): typeof JSON.stringify => {
         // Return the result of stringifying the value.
         // Cheating here, JSON.stringify can return undefined but overloaded types
         // are not seen here so we cast to string to satisfy tsc
-        return sStringify(``, { "": value }) as string;
+        return sStringify(``, { "": value }) as Stringified<typeof value>;
     };
 })();

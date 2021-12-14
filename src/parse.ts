@@ -5,11 +5,9 @@ import {
     error,
     ignore,
     preserve,
+    isNonNullObject,
 } from "lib";
 
-const isNonNullObject = (o: unknown): o is Record<string, unknown> | unknown[] => {
-    return typeof o === `object` && o !== null;
-};
 const bigint = `bigint`;
 const number = `number`;
 
@@ -35,22 +33,50 @@ const ESCAPEE = {
     t: `\t`,
 } as const;
 
-type NumberOrBigInt = `number` | `bigint`;
-export type Schema =
-    | NumberOrBigInt
-    | ((n: number | bigint) => NumberOrBigInt)
-    | { [key: string | symbol]: Schema }
-    | (Schema | null)[];
+type StringOrNumberOrSymbol = string | number | symbol;
+type SimpleSchema = `number` | `bigint` | ((n: number | bigint) => `number` | `bigint`);
+type InternalSchema =
+    | SimpleSchema
+    | (InternalSchema | null)[]
+    | { [key: StringOrNumberOrSymbol]: InternalSchema | undefined };
+// eslint-disable-next-line @typescript-eslint/ban-types
+type NumberOrBigInt = number | Number | bigint;
+export type Schema<T = unknown> = unknown extends T
+    ? InternalSchema
+    : T extends NumberOrBigInt
+    ? SimpleSchema
+    : T extends (infer E)[]
+    ? (Schema<E> | null)[]
+    : T extends Record<StringOrNumberOrSymbol, unknown>
+    ? {
+          [K in keyof T as K extends symbol
+              ? never
+              : Schema<T[K]> extends Record<StringOrNumberOrSymbol, never>
+              ? never
+              : K | symbol]?: Schema<T[K]>;
+      }
+    : never;
 
+// TODO: parse return type when schema type is passed in
+// type Parsed<S> = S extends SchemaNumberOrBigIntOrFn
+//     ? number | bigint | string
+//     : S extends (infer E | null)[]
+//     ? Parsed<E>[]
+//     : S extends Record<string | number | symbol, infer E>
+//     ? { [K in keyof S as K extends symbol ? string : K]: Parsed<E> } & Record<
+//           string | number | symbol,
+//           unknown
+//       >
+//     : any;
 type JsonValue = Record<string, unknown> | unknown[] | string | number | bigint | boolean | null;
 // Closure for internal state variables.
 // Parser's internal state variables are prefixed with p_, methods are prefixed with p
 export const newParse = (
     p_user_options?: JsonBigIntOptions,
-): ((
+): (<T>(
     text: string,
-    reviver?: ((this: any, key: string, value: any) => any) | null,
-    schema?: Schema,
+    reviver?: Parameters<typeof JSON.parse>[1] | null,
+    schema?: Schema<T>,
 ) => any) => {
     // This returns a function that can parse a JSON text, producing a JavaScript
     // data structure. It is a simple, recursive descent parser. It does not use
@@ -95,8 +121,7 @@ export const newParse = (
                 p_options.protoAction = p_user_options.protoAction;
             } else {
                 throw new Error(
-                    // This case is possible in JS but not TS (hence type never).
-                    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+                    // This case is possible in JS but not TS.
                     `Incorrect value for protoAction option, must be ${PROTO_ACTIONS.map(
                         (a) => `"${a}"`,
                     ).join(` or `)} but passed ${p_user_options.protoAction}`,
@@ -108,8 +133,7 @@ export const newParse = (
                 p_options.constructorAction = p_user_options.constructorAction;
             } else {
                 throw new Error(
-                    // This case is possible in JS but not TS (hence type never).
-                    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+                    // This case is possible in JS but not TS.
                     `Incorrect value for constructorAction option, must be ${CONSTRUCTOR_ACTIONS.map(
                         (a) => `"${a}"`,
                     ).join(` or `)} but passed ${p_user_options.constructorAction}`,
@@ -148,7 +172,7 @@ export const newParse = (
         }
     };
 
-    const pObject = (schema?: Schema) => {
+    const pObject = (schema?: InternalSchema) => {
         // Parse an object value.
 
         const result = (p_options.protoAction === preserve ? Object.create(null) : {}) as Record<
@@ -216,7 +240,7 @@ export const newParse = (
         return pError(`Bad object`);
     };
 
-    const pArray = (schema?: Schema) => {
+    const pArray = (schema?: InternalSchema) => {
         // Parse an array value.
 
         const result: JsonValue[] = [];
@@ -297,7 +321,7 @@ export const newParse = (
         return pError(`Bad string`);
     };
 
-    const pNumber = (schema?: Schema) => {
+    const pNumber = (schema?: InternalSchema) => {
         // Parse a number value.
 
         let result_string = ``;
@@ -343,14 +367,14 @@ export const newParse = (
         } else {
             // Decimal or scientific notation
             // cannot be BigInt, aka BigInt("1.79e+308") will throw.
-            const is_fractional_or_scientific = /[.eE]/.test(result_string);
-            if (Number.isSafeInteger(result_number) || is_fractional_or_scientific) {
+            const is_decimal_or_scientific = /[.eE]/.test(result_string);
+            if (Number.isSafeInteger(result_number) || is_decimal_or_scientific) {
                 if (typeof schema === `function`) schema = schema(result_number);
                 return schema === number ||
                     (!p_options.alwaysParseAsBigInt && schema !== bigint) ||
-                    (is_fractional_or_scientific && !p_options.errorOnBigIntDecimalOrScientific)
+                    (is_decimal_or_scientific && !p_options.errorOnBigIntDecimalOrScientific)
                     ? result_number
-                    : is_fractional_or_scientific
+                    : is_decimal_or_scientific
                     ? pError(`Decimal and scientific notation cannot be bigint`)
                     : BigInt(result_string);
             } else {
@@ -393,7 +417,7 @@ export const newParse = (
         return pError(`Unexpected '${p_current_char}'`);
     };
 
-    const pJsonValue = (schema?: Schema): JsonValue => {
+    const pJsonValue = (schema?: InternalSchema): JsonValue => {
         // Parse a JSON value. It could be an object, an array, a string, a number,
         // or boolean or null.
 
@@ -419,7 +443,7 @@ export const newParse = (
         // Reset state.
         p_current_char_index = -1; // next char will begin at 0
         p_current_char = ` `;
-        p_text = text.toString();
+        p_text = String(text);
 
         const result = pJsonValue(schema);
         pSkipWhite();

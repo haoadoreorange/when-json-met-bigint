@@ -35,3 +35,7 @@ export type JsonBigIntOptions = {
      */
     constructorAction?: typeof CONSTRUCTOR_ACTIONS[number];
 };
+
+export const isNonNullObject = (o: unknown): o is Record<string, unknown> | unknown[] => {
+    return o !== null && typeof o === `object`;
+};
