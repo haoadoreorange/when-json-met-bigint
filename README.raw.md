@@ -99,12 +99,12 @@ In order to overcome the limitation, we need an API for users to decide per case
 through a schema-like object. Its type is defined as following;
 
 ```typescript
-type NumberOrBigInt = `number` | `bigint`;
 type Schema =
-    | NumberOrBigInt
-    | ((n: number | bigint) => NumberOrBigInt)
-    | { [key: string | symbol]: Schema }
-    | (Schema | null)[];
+    | `number`
+    | `bigint`
+    | ((n: number | bigint) => `number` | `bigint`)
+    | (Schema | null)[]
+    | { [key: string | number | symbol]: Schema };
 ```
 
 To put it simple, the schema-like argument is an object with fields and
@@ -138,6 +138,11 @@ having no schema.
 If a value different from those defined above passed in or returned from the
 callback, it is as if there is no schema.
 
+The package also export a `Schema<T>` type definition, given an optional generic
+parameter, will infer the appropriate structure type for the schema. If no type
+given it returns the `Schema` type defined above. The generic type parameter can
+also be passed to the `parse` function if wanted.
+
 example:
 
 ```typescript
@@ -155,6 +160,9 @@ JSONB.parse(`{"a": [1, 2, 3] }`, null, { a: [`bigint`] }); // returns {a: [1n, 2
 JSONB.parse(`{"a": [1, 2, 3] }`, null, { a: [`bigint`, `bigint`] }); // returns {a: [1n, 2n, 3] }
 JSONB.parse(`{"a": [1, 2, 3] }`, null, { a: [`bigint`, null] }); // returns {a: [1n, 2, 3] }
 JSONB.parse(`{"a": [1, 2, 3] }`, null, { a: [null, null, `bigint`] }); // returns {a: [1, 2, 3n] }
+JSONB.parse<{ a: number[] }>(`{"a": [1, 2, 3] }`, null, {
+    a: [null, `something else`, `bigint`],
+}); // compilation error
 ```
 
 ### JSONB.stringify(value[, replacer[, space]])

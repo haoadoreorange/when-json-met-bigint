@@ -1,18 +1,18 @@
 {
   "name": "parse big obj with BigInt",
-  "date": "2021-12-14T07:39:09.251Z",
+  "date": "2021-12-14T22:21:23.007Z",
   "version": null,
   "results": [
     {
       "name": "JSON",
       "ops": 1.4,
-      "margin": 3.57,
+      "margin": 4.26,
       "percentSlower": 0
     },
     {
       "name": "when-json-met-bigint",
       "ops": 1,
-      "margin": 3.99,
+      "margin": 3.59,
       "percentSlower": 28.57
     }
   ],

@@ -1,19 +1,19 @@
 {
   "name": "stringify big obj with BigInt",
-  "date": "2021-12-14T07:38:15.330Z",
+  "date": "2021-12-14T22:20:30.142Z",
   "version": null,
   "results": [
     {
       "name": "JSON",
-      "ops": 2.5,
-      "margin": 2.68,
+      "ops": 3,
+      "margin": 1.27,
       "percentSlower": 0
     },
     {
       "name": "when-json-met-bigint",
-      "ops": 2.1,
-      "margin": 2.21,
-      "percentSlower": 16
+      "ops": 2,
+      "margin": 1.57,
+      "percentSlower": 33.33
     }
   ],
   "fastest": {

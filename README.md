@@ -100,12 +100,12 @@ In order to overcome the limitation, we need an API for users to decide per case
 through a schema-like object. Its type is defined as following;
 
 ```typescript
-type NumberOrBigInt = `number` | `bigint`;
 type Schema =
-    | NumberOrBigInt
-    | ((n: number | bigint) => NumberOrBigInt)
-    | { [key: string | symbol]: Schema }
-    | (Schema | null)[];
+    | `number`
+    | `bigint`
+    | ((n: number | bigint) => `number` | `bigint`)
+    | (Schema | null)[]
+    | { [key: string | number | symbol]: Schema };
 ```
 
 To put it simple, the schema-like argument is an object with fields and
@@ -139,6 +139,11 @@ having no schema.
 If a value different from those defined above passed in or returned from the
 callback, it is as if there is no schema.
 
+The package also export a `Schema<T>` type definition, given an optional generic
+parameter, will infer the appropriate structure type for the schema. If no type
+given it returns the `Schema` type defined above. The generic type parameter can
+also be passed to the `parse` function if wanted.
+
 example:
 
 ```typescript
@@ -156,6 +161,9 @@ JSONB.parse(`{"a": [1, 2, 3] }`, null, { a: [`bigint`] }); // returns {a: [1n, 2
 JSONB.parse(`{"a": [1, 2, 3] }`, null, { a: [`bigint`, `bigint`] }); // returns {a: [1n, 2n, 3] }
 JSONB.parse(`{"a": [1, 2, 3] }`, null, { a: [`bigint`, null] }); // returns {a: [1n, 2, 3] }
 JSONB.parse(`{"a": [1, 2, 3] }`, null, { a: [null, null, `bigint`] }); // returns {a: [1, 2, 3n] }
+JSONB.parse<{ a: number[] }>(`{"a": [1, 2, 3] }`, null, {
+    a: [null, `something else`, `bigint`],
+}); // compilation error
 ```
 
 ### JSONB.stringify(value[, replacer[, space]])
@@ -416,9 +424,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>3</td><td>1.06</td><td>0</td>
+          <td>JSON</td><td>3</td><td>2.13</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>2</td><td>3.51</td><td>33.33</td>
+          <td>when-json-met-bigint</td><td>2</td><td>3</td><td>33.33</td>
         </tr>
       </tbody>
     </table>
@@ -444,9 +452,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>1.4</td><td>3.57</td><td>0</td>
+          <td>JSON</td><td>1.4</td><td>4.26</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>1</td><td>3.99</td><td>28.57</td>
+          <td>when-json-met-bigint</td><td>1</td><td>3.59</td><td>28.57</td>
         </tr>
       </tbody>
     </table>
@@ -472,9 +480,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>172</td><td>1.3</td><td>0</td>
+          <td>JSON</td><td>171</td><td>1.62</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>114</td><td>1.34</td><td>33.72</td>
+          <td>when-json-met-bigint</td><td>114</td><td>1.08</td><td>33.33</td>
         </tr>
       </tbody>
     </table>
@@ -500,9 +508,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>6</td><td>2.35</td><td>0</td>
+          <td>JSON</td><td>6</td><td>2.27</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>4</td><td>0.87</td><td>33.33</td>
+          <td>when-json-met-bigint</td><td>4</td><td>2.71</td><td>33.33</td>
         </tr>
       </tbody>
     </table>
@@ -528,9 +536,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>2.5</td><td>2.68</td><td>0</td>
+          <td>JSON</td><td>3</td><td>1.27</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>2.1</td><td>2.21</td><td>16</td>
+          <td>when-json-met-bigint</td><td>2</td><td>1.57</td><td>33.33</td>
         </tr>
       </tbody>
     </table>
@@ -556,9 +564,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>295</td><td>1.21</td><td>0</td>
+          <td>JSON</td><td>299</td><td>0.45</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>263</td><td>1.83</td><td>10.85</td>
+          <td>when-json-met-bigint</td><td>261</td><td>1.11</td><td>12.71</td>
         </tr>
       </tbody>
     </table>

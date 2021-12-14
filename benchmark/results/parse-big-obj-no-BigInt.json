@@ -1,18 +1,18 @@
 {
   "name": "parse big obj no BigInt",
-  "date": "2021-12-14T07:38:43.138Z",
+  "date": "2021-12-14T22:20:57.325Z",
   "version": null,
   "results": [
     {
       "name": "JSON",
       "ops": 3,
-      "margin": 1.06,
+      "margin": 2.13,
       "percentSlower": 0
     },
     {
       "name": "when-json-met-bigint",
       "ops": 2,
-      "margin": 3.51,
+      "margin": 3,
       "percentSlower": 33.33
     }
   ],
