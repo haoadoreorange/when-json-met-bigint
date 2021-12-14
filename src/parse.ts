@@ -39,11 +39,10 @@ type InternalSchema =
     | SimpleSchema
     | (InternalSchema | null)[]
     | { [key: StringOrNumberOrSymbol]: InternalSchema | undefined };
-// eslint-disable-next-line @typescript-eslint/ban-types
-type NumberOrBigInt = number | Number | bigint;
 export type Schema<T = unknown> = unknown extends T
     ? InternalSchema
-    : T extends NumberOrBigInt
+    : // eslint-disable-next-line @typescript-eslint/ban-types
+    T extends number | Number | bigint
     ? SimpleSchema
     : T extends (infer E)[]
     ? (Schema<E> | null)[]
@@ -58,7 +57,7 @@ export type Schema<T = unknown> = unknown extends T
       }
     : never;
 
-// TODO: parse return type when schema type is passed in
+// TODO: Infer parsed type when schema generic parameter is known
 // type Parsed<S> = S extends SchemaNumberOrBigIntOrFn
 //     ? number | bigint | string
 //     : S extends (infer E | null)[]
@@ -69,7 +68,14 @@ export type Schema<T = unknown> = unknown extends T
 //           unknown
 //       >
 //     : any;
-type JsonValue = Record<string, unknown> | unknown[] | string | number | bigint | boolean | null;
+type JsonValue =
+    | { [key: string]: JsonValue }
+    | JsonValue[]
+    | string
+    | number
+    | bigint
+    | boolean
+    | null;
 // Closure for internal state variables.
 // Parser's internal state variables are prefixed with p_, methods are prefixed with p
 export const newParse = (
@@ -78,7 +84,7 @@ export const newParse = (
     text: string,
     reviver?: Parameters<typeof JSON.parse>[1] | null,
     schema?: Schema<T>,
-) => any) => {
+) => ReturnType<typeof JSON.parse>) => {
     // This returns a function that can parse a JSON text, producing a JavaScript
     // data structure. It is a simple, recursive descent parser. It does not use
     // eval or regular expressions, so it can be used as a model for implementing
@@ -178,7 +184,7 @@ export const newParse = (
 
         const result = (p_options.protoAction === preserve ? Object.create(null) : {}) as Record<
             string,
-            unknown
+            JsonValue
         >;
 
         if (p_current_char === `{`) {
@@ -460,11 +466,11 @@ export const newParse = (
 
         if (typeof reviver === `function`) {
             return (function walk(
-                object_or_array: Record<string, unknown> | unknown[],
+                object_or_array: Record<string, JsonValue> | JsonValue[],
                 key: string,
             ) {
                 // @ts-expect-error index array with string
-                const value = object_or_array[key] as unknown;
+                const value = object_or_array[key] as JsonValue;
                 if (isNonNullObject(value)) {
                     const revived_keys = new Set<string>();
                     for (const reviving_key in value) {

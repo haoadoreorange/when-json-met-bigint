@@ -47,7 +47,7 @@ const quote = (s: string) => {
 
 type ReplacerFn = (this: any, key: string, value: any) => any;
 // eslint-disable-next-line @typescript-eslint/ban-types
-type Stringified<V> = V extends symbol | Function ? undefined : string;
+type Stringified<V> = V extends symbol | Function ? undefined : ReturnType<typeof JSON.stringify>;
 type Stringify = <V>(
     value: V,
     // eslint-disable-next-line @typescript-eslint/ban-types
@@ -70,8 +70,8 @@ export const stringify = ((): Stringify => {
     const s_replacer = new Set<string>();
 
     const sStringify = <T extends Record<string, unknown> | unknown[]>(
-        key_or_index: T extends Record<string, unknown> ? keyof T : number,
         object_or_array: T,
+        key_or_index: T extends Record<string, unknown> ? keyof T : number,
     ): string | undefined => {
         // Produce a string from object_or_array[key_or_index].
 
@@ -119,7 +119,7 @@ export const stringify = ((): Stringify => {
                     // The value is an array. Stringify every element. Use null as a placeholder
                     // for non-JSON values.
                     const partial = value.map(
-                        (_v_, i) => sStringify(i, value as unknown[]) || `null`,
+                        (_v_, i) => sStringify(value as unknown[], i) || `null`,
                     );
 
                     // Join all of the elements together, separated with commas, and wrap them in
@@ -142,7 +142,7 @@ export const stringify = ((): Stringify => {
 
                 const partial: string[] = [];
                 (s_replacer.size > 0 ? s_replacer : Object.keys(value)).forEach((key) => {
-                    const v = sStringify(key, value as Record<string, unknown>);
+                    const v = sStringify(value as Record<string, unknown>, key);
                     if (v) {
                         partial.push(quote(key) + (s_gap ? `: ` : `:`) + v);
                     }
@@ -188,11 +188,10 @@ export const stringify = ((): Stringify => {
             sReplacer = null;
             if (isNonNullObject(value))
                 replacer.forEach((e) => {
-                    const key_string = e?.toString();
-                    if (!s_replacer.has(key_string) && key_string) {
-                        const key = toPrimitive(e);
-                        if (typeof key === `string` || typeof key === `number`)
-                            s_replacer.add(key_string);
+                    const key = toPrimitive(e);
+                    if (typeof key === `string` || typeof key === `number`) {
+                        const key_string = key.toString();
+                        if (!s_replacer.has(key_string)) s_replacer.add(key_string);
                     }
                 });
         } else sReplacer = replacer;
@@ -201,6 +200,6 @@ export const stringify = ((): Stringify => {
         // Return the result of stringifying the value.
         // Cheating here, JSON.stringify can return undefined but overloaded types
         // are not seen here so we cast to string to satisfy tsc
-        return sStringify(``, { "": value }) as Stringified<typeof value>;
+        return sStringify({ "": value }, ``) as Stringified<typeof value>;
     };
 })();
