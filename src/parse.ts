@@ -47,7 +47,8 @@ export type Schema<T = unknown> = unknown extends T
     ? SimpleSchema
     : T extends (infer E)[]
     ? (Schema<E> | null)[]
-    : T extends Record<StringOrNumberOrSymbol, unknown>
+    : // unknown wouldn't work for interface, have to be any, see https://github.com/microsoft/TypeScript/issues/42825
+    T extends Record<StringOrNumberOrSymbol, any>
     ? {
           [K in keyof T as K extends symbol
               ? never
