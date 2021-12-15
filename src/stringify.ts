@@ -1,9 +1,10 @@
 import { isNonNullObject } from "lib";
 
-const isObjectWithToJSOnImplemented = <T>(o: T): o is T & { toJSON: (key?: string) => unknown } => {
+const isNonNullObjectWithToJSOnImplemented = <T>(
+    o: T,
+): o is T & { toJSON: (key?: string) => unknown } =>
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    return typeof o === `object` && o !== null && typeof (o as any).toJSON === `function`;
-};
+    isNonNullObject(o) && typeof (o as any).toJSON === `function`;
 
 // Number -> number & String -> string
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -26,24 +27,29 @@ const META = {
     "\\": `\\\\`,
 } as const;
 
-const quote = (s: string) => {
-    // If the string contains no control characters, no quote characters, and no
-    // backslash characters, then we can safely slap some quotes around it.
-    // Otherwise we must also replace the offending characters with safe escape
-    // sequences.
-
-    ESCAPABLE.lastIndex = 0;
-    return ESCAPABLE.test(s)
-        ? `"` +
-              s.replace(ESCAPABLE, function (a) {
-                  const c = META[a as keyof typeof META];
-                  return typeof c === `string`
-                      ? c
-                      : `\\u` + (`0000` + a.charCodeAt(0).toString(16)).slice(-4);
-              }) +
-              `"`
-        : `"` + s + `"`;
-};
+const quote = (() => {
+    const cache: Record<string, string> = {};
+    return (s: string) => {
+        if (!cache[s]) {
+            // If the string contains no control characters, no quote characters, and no
+            // backslash characters, then we can safely slap some quotes around it.
+            // Otherwise we must also replace the offending characters with safe escape
+            // sequences.
+            ESCAPABLE.lastIndex = 0;
+            cache[s] = ESCAPABLE.test(s)
+                ? `"` +
+                  s.replace(ESCAPABLE, function (a) {
+                      const c = META[a as keyof typeof META];
+                      return typeof c === `string`
+                          ? c
+                          : `\\u` + (`0000` + a.charCodeAt(0).toString(16)).slice(-4);
+                  }) +
+                  `"`
+                : `"` + s + `"`;
+        }
+        return cache[s];
+    };
+})();
 
 type ReplacerFn = (this: any, key: string, value: any) => any;
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -79,7 +85,7 @@ export const stringify = ((): Stringify => {
         let value = object_or_array[key_or_index] as unknown;
 
         // If the value has toJSON method, call it.
-        if (isObjectWithToJSOnImplemented(value)) {
+        if (isNonNullObjectWithToJSOnImplemented(value)) {
             value = value.toJSON();
         }
 
@@ -95,7 +101,7 @@ export const stringify = ((): Stringify => {
                 return quote(value);
             case `number`:
                 // JSON numbers must be finite. Encode non-finite numbers as null.
-                return isFinite(value) ? value.toString() : `null`;
+                return Number.isFinite(value) ? value.toString() : `null`;
             case `boolean`:
             case `bigint`:
                 return value.toString();

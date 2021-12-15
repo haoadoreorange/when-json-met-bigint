@@ -328,75 +328,95 @@ export const newParse = (
         return pError(`Bad string`);
     };
 
-    const pNumber = (schema?: InternalSchema) => {
-        // Parse a number value.
+    const pNumber = (() => {
+        const cache: Record<
+            string,
+            Map<SimpleSchema | undefined | null, number | bigint | string>
+        > = {};
+        return (schema?: SimpleSchema | null) => {
+            // Parse a number value.
 
-        let result_string = ``;
-        let is_positive = true; // for Infinity
+            let result_string = ``;
+            let is_positive = true; // for Infinity
 
-        if (p_current_char === `-`) {
-            result_string = p_current_char;
-            is_positive = false;
-            pNext();
-        }
-        if (p_current_char === `0`) {
-            result_string += p_current_char;
-            pNext();
-            if (p_current_char >= `0` && p_current_char <= `9`) pError(`Bad number`);
-        }
-        while (p_current_char >= `0` && p_current_char <= `9`) {
-            result_string += p_current_char;
-            pNext();
-        }
-        if (p_current_char === `.`) {
-            result_string += p_current_char;
-            while (pNext() && p_current_char >= `0` && p_current_char <= `9`) {
-                result_string += p_current_char;
+            if (p_current_char === `-`) {
+                result_string = p_current_char;
+                is_positive = false;
+                pNext();
             }
-        }
-        if (p_current_char === `e` || p_current_char === `E`) {
-            result_string += p_current_char;
-            pNext();
-            // @ts-expect-error next() change ch
-            if (p_current_char === `-` || p_current_char === `+`) {
+            if (p_current_char === `0`) {
                 result_string += p_current_char;
                 pNext();
+                if (p_current_char >= `0` && p_current_char <= `9`) pError(`Bad number`);
             }
             while (p_current_char >= `0` && p_current_char <= `9`) {
                 result_string += p_current_char;
                 pNext();
             }
-        }
-        const result_number = Number(result_string);
-        if (Number.isNaN(result_number)) pError(`Bad number`);
-        if (!Number.isFinite(result_number)) {
-            return is_positive ? Infinity : -Infinity;
-        } else {
-            // Decimal or scientific notation
-            // cannot be BigInt, aka BigInt("1.79e+308") will throw.
-            const is_decimal_or_scientific = /[.eE]/.test(result_string);
-            if (Number.isSafeInteger(result_number) || is_decimal_or_scientific) {
-                if (typeof schema === `function`) schema = schema(result_number);
-                return schema === number ||
-                    (!p_options.alwaysParseAsBigInt && schema !== bigint) ||
-                    (is_decimal_or_scientific && !p_options.errorOnBigIntDecimalOrScientific)
-                    ? result_number
-                    : is_decimal_or_scientific
-                    ? pError(`Decimal and scientific notation cannot be bigint`)
-                    : BigInt(result_string);
-            } else {
-                let result_bigint;
-                if (typeof schema === `function`) {
-                    result_bigint = BigInt(result_string);
-                    schema = schema(result_bigint);
+            if (p_current_char === `.`) {
+                result_string += p_current_char;
+                while (pNext() && p_current_char >= `0` && p_current_char <= `9`) {
+                    result_string += p_current_char;
                 }
-                if (schema === number) return result_number;
-                return p_options.parseBigIntAsString
-                    ? result_string
-                    : result_bigint || BigInt(result_string);
             }
-        }
-    };
+            if (p_current_char === `e` || p_current_char === `E`) {
+                result_string += p_current_char;
+                pNext();
+                // @ts-expect-error next() change ch
+                if (p_current_char === `-` || p_current_char === `+`) {
+                    result_string += p_current_char;
+                    pNext();
+                }
+                while (p_current_char >= `0` && p_current_char <= `9`) {
+                    result_string += p_current_char;
+                    pNext();
+                }
+            }
+            if (!cache[result_string] || !cache[result_string].has(schema)) {
+                if (!cache[result_string]) cache[result_string] = new Map();
+                const result_number = Number(result_string);
+                if (Number.isNaN(result_number)) {
+                    cache[result_string].set(schema, NaN);
+                } else if (!Number.isFinite(result_number)) {
+                    cache[result_string].set(schema, is_positive ? Infinity : -Infinity);
+                } else {
+                    // Decimal or scientific notation
+                    // cannot be BigInt, aka BigInt("1.79e+308") will throw.
+                    const is_decimal_or_scientific = /[.eE]/.test(result_string);
+                    if (Number.isSafeInteger(result_number) || is_decimal_or_scientific) {
+                        if (typeof schema === `function`) schema = schema(result_number);
+                        cache[result_string].set(
+                            schema,
+                            schema === number ||
+                                (!p_options.alwaysParseAsBigInt && schema !== bigint) ||
+                                (is_decimal_or_scientific &&
+                                    !p_options.errorOnBigIntDecimalOrScientific)
+                                ? result_number
+                                : is_decimal_or_scientific
+                                ? pError(`Decimal and scientific notation cannot be bigint`)
+                                : BigInt(result_string),
+                        );
+                    } else {
+                        let result_bigint;
+                        if (typeof schema === `function`) {
+                            result_bigint = BigInt(result_string);
+                            schema = schema(result_bigint);
+                        }
+                        if (schema === number) cache[result_string].set(schema, result_number);
+                        cache[result_string].set(
+                            schema,
+                            p_options.parseBigIntAsString
+                                ? result_string
+                                : result_bigint || BigInt(result_string),
+                        );
+                    }
+                }
+            }
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            const v = cache[result_string].get(schema)!; // Cannot be undefined
+            return Number.isNaN(v) ? pError(`Bad number`) : v;
+        };
+    })();
 
     const pBooleanOrNull = () => {
         // true, false, or null.
@@ -437,10 +457,10 @@ export const newParse = (
             case `"`:
                 return pString();
             case `-`:
-                return pNumber(schema);
+                return pNumber(schema as SimpleSchema);
             default:
                 return p_current_char >= `0` && p_current_char <= `9`
-                    ? pNumber(schema)
+                    ? pNumber(schema as SimpleSchema)
                     : pBooleanOrNull();
         }
     };
