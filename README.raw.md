@@ -24,6 +24,8 @@ Implemented following ES2022 `JSON.parse/stringify`
 
 All exports are named to avoid CommonJS/ESM default export complication.
 
+Compability: ES6 and above.
+
 ==========
 
 `JSON.parse/stringify` with ES2020 `BigInt` support. Based on Douglas Crockford

@@ -1,4 +1,5 @@
 const CLASS_PROPERTY = `classProperty`;
+const PARAMETER_PROPERTY = `parameterProperty`;
 const PARAMETER = `parameter`;
 const VARIABLE = `variable`;
 const METHOD = `method`;
@@ -96,6 +97,26 @@ module.exports = {
             },
             {
                 selector: CLASS_PROPERTY,
+                modifiers: private,
+                format: snake_case,
+                leadingUnderscore: `require`,
+            },
+            {
+                selector: PARAMETER_PROPERTY,
+                types: boolean,
+                modifiers: [`private`],
+                format: snake_case,
+                prefix,
+                leadingUnderscore: `require`,
+            },
+            {
+                selector: PARAMETER_PROPERTY,
+                types: boolean,
+                format: snake_case,
+                prefix,
+            },
+            {
+                selector: PARAMETER_PROPERTY,
                 modifiers: private,
                 format: snake_case,
                 leadingUnderscore: `require`,

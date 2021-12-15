@@ -1,4 +1,4 @@
-import { isNonNullObject } from "lib";
+import { Cache, isNonNullObject } from "lib";
 
 const isNonNullObjectWithToJSOnImplemented = <T>(
     o: T,
@@ -28,26 +28,30 @@ const META = {
 } as const;
 
 const quote = (() => {
-    const cache: Record<string, string> = {};
+    const cache = new Cache<string, string>();
     return (s: string) => {
-        if (!cache[s]) {
+        if (!cache.has(s)) {
             // If the string contains no control characters, no quote characters, and no
             // backslash characters, then we can safely slap some quotes around it.
             // Otherwise we must also replace the offending characters with safe escape
             // sequences.
             ESCAPABLE.lastIndex = 0;
-            cache[s] = ESCAPABLE.test(s)
-                ? `"` +
-                  s.replace(ESCAPABLE, function (a) {
-                      const c = META[a as keyof typeof META];
-                      return typeof c === `string`
-                          ? c
-                          : `\\u` + (`0000` + a.charCodeAt(0).toString(16)).slice(-4);
-                  }) +
-                  `"`
-                : `"` + s + `"`;
+            cache.set(
+                s,
+                ESCAPABLE.test(s)
+                    ? `"` +
+                          s.replace(ESCAPABLE, function (a) {
+                              const c = META[a as keyof typeof META];
+                              return typeof c === `string`
+                                  ? c
+                                  : `\\u` + (`0000` + a.charCodeAt(0).toString(16)).slice(-4);
+                          }) +
+                          `"`
+                    : `"` + s + `"`,
+            );
         }
-        return cache[s];
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        return cache.get(s)!; // Cannot be undefined
     };
 })();
 
