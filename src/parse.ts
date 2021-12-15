@@ -330,6 +330,7 @@ export const newParse = (
 
     const pNumber = (() => {
         const cache: Record<
+            // TODO: Add test
             string,
             Map<SimpleSchema | undefined | null, number | bigint | string>
         > = {};
@@ -372,13 +373,14 @@ export const newParse = (
                     pNext();
                 }
             }
-            if (!cache[result_string] || !cache[result_string].has(schema)) {
+            const raw_schema = schema;
+            if (!cache[result_string] || !cache[result_string].has(raw_schema)) {
                 if (!cache[result_string]) cache[result_string] = new Map();
                 const result_number = Number(result_string);
                 if (Number.isNaN(result_number)) {
-                    cache[result_string].set(schema, NaN);
+                    cache[result_string].set(raw_schema, NaN);
                 } else if (!Number.isFinite(result_number)) {
-                    cache[result_string].set(schema, is_positive ? Infinity : -Infinity);
+                    cache[result_string].set(raw_schema, is_positive ? Infinity : -Infinity);
                 } else {
                     // Decimal or scientific notation
                     // cannot be BigInt, aka BigInt("1.79e+308") will throw.
@@ -386,7 +388,7 @@ export const newParse = (
                     if (Number.isSafeInteger(result_number) || is_decimal_or_scientific) {
                         if (typeof schema === `function`) schema = schema(result_number);
                         cache[result_string].set(
-                            schema,
+                            raw_schema,
                             schema === number ||
                                 (!p_options.alwaysParseAsBigInt && schema !== bigint) ||
                                 (is_decimal_or_scientific &&
@@ -402,18 +404,19 @@ export const newParse = (
                             result_bigint = BigInt(result_string);
                             schema = schema(result_bigint);
                         }
-                        if (schema === number) cache[result_string].set(schema, result_number);
-                        cache[result_string].set(
-                            schema,
-                            p_options.parseBigIntAsString
-                                ? result_string
-                                : result_bigint || BigInt(result_string),
-                        );
+                        if (schema === number) cache[result_string].set(raw_schema, result_number);
+                        else
+                            cache[result_string].set(
+                                raw_schema,
+                                p_options.parseBigIntAsString
+                                    ? result_string
+                                    : result_bigint || BigInt(result_string),
+                            );
                     }
                 }
             }
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const v = cache[result_string].get(schema)!; // Cannot be undefined
+            const v = cache[result_string].get(raw_schema)!; // Cannot be undefined
             return Number.isNaN(v) ? pError(`Bad number`) : v;
         };
     })();
