@@ -431,9 +431,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>3</td><td>1.2</td><td>0</td>
+          <td>JSON</td><td>3</td><td>3.01</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>2</td><td>3.72</td><td>33.33</td>
+          <td>when-json-met-bigint</td><td>2</td><td>4.16</td><td>33.33</td>
         </tr>
       </tbody>
     </table>
@@ -459,9 +459,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>1.4</td><td>3.1</td><td>0</td>
+          <td>JSON</td><td>1.4</td><td>3.09</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>1.2</td><td>1.66</td><td>14.29</td>
+          <td>when-json-met-bigint</td><td>1.2</td><td>1.81</td><td>14.29</td>
         </tr>
       </tbody>
     </table>
@@ -487,9 +487,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>172</td><td>0.46</td><td>0</td>
+          <td>JSON</td><td>173</td><td>1.96</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>139</td><td>0.29</td><td>19.19</td>
+          <td>when-json-met-bigint</td><td>134</td><td>1.45</td><td>22.54</td>
         </tr>
       </tbody>
     </table>
@@ -515,9 +515,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>6</td><td>1.75</td><td>0</td>
+          <td>JSON</td><td>6</td><td>2.71</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>4</td><td>2</td><td>33.33</td>
+          <td>when-json-met-bigint</td><td>4</td><td>2.53</td><td>33.33</td>
         </tr>
       </tbody>
     </table>
@@ -543,9 +543,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>3</td><td>1.04</td><td>0</td>
+          <td>JSON</td><td>2.5</td><td>2.61</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>2</td><td>2.44</td><td>33.33</td>
+          <td>when-json-met-bigint</td><td>2.4</td><td>4.06</td><td>4</td>
         </tr>
       </tbody>
     </table>
@@ -571,9 +571,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>298</td><td>0.78</td><td>7.45</td>
+          <td>JSON</td><td>299</td><td>1.07</td><td>1.64</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>322</td><td>1.05</td><td>0</td>
+          <td>when-json-met-bigint</td><td>304</td><td>2.46</td><td>0</td>
         </tr>
       </tbody>
     </table>
