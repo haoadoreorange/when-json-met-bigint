@@ -1,18 +1,18 @@
 {
   "name": "stringify big obj no BigInt",
-  "date": "2021-12-14T22:20:11.783Z",
+  "date": "2021-12-15T03:42:08.681Z",
   "version": null,
   "results": [
     {
       "name": "JSON",
       "ops": 6,
-      "margin": 2.27,
+      "margin": 1.75,
       "percentSlower": 0
     },
     {
       "name": "when-json-met-bigint",
       "ops": 4,
-      "margin": 2.71,
+      "margin": 2,
       "percentSlower": 33.33
     }
   ],

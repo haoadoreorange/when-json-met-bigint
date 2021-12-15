@@ -13,7 +13,12 @@ determinism.
 Compare to [json-bigint](https://github.com/sidorares/json-bigint),
 `when-json-met-bigint` try its best to be "default JSON API compliant", all
 custom behaviours are opt-in through options (e.g `options.protoAction`
-'preserve' instead of 'error' by default).
+'preserve' instead of 'error' by default). Performance-wise this package might
+be theoretically a little bit faster thanks to cache, depends on use cases.
+
+Compare to default `JSON` on non-bigint objects, small fixes were made regarding
+type definition to align with the spec, for example `JSONB.stringify` return
+`undefined` if called with `symbol` or `Function` as value.
 
 Implemented following ES2022 `JSON.parse/stringify`
 [specification](https://tc39.es/ecma262/#sec-json.parse).
@@ -95,9 +100,9 @@ type as you can see
 [here](https://github.com/theia-ide/tsp-typescript-client/pull/37). That PR has
 an interesting approach which this solution is inspired from.
 
-In order to overcome the limitation, we need an API for users to decide per case
-& per field whether it should be `bigint` or `number`. This API is exposed
-through a schema-like object. Its type is defined as following;
+In order to overcome the limitation, we need a parser's API so that users can
+specify per case & per field whether it should be `bigint` or `number`. This API
+is exposed through a schema-like object. Its type is defined as following;
 
 ```typescript
 type Schema =
@@ -139,10 +144,12 @@ having no schema.
 If a value different from those defined above passed in or returned from the
 callback, it is as if there is no schema.
 
-The package also export a `Schema<T>` type definition, given an optional generic
-parameter, will infer the appropriate structure type for the schema. If no type
-given it returns the `Schema` type defined above. The generic type parameter can
-also be passed to the `parse` function if wanted.
+To aid with `Typescript` support, the package also export a `Schema<T>` type
+definition, given an optional generic parameter, will infer the appropriate
+structure type for the schema. If no type given it returns the `Schema` type
+defined above. The generic type parameter can also be passed to the `parse<T>`
+function if wanted to have similar effect, that is to constraint the type of the
+schema argument.
 
 example:
 
@@ -424,9 +431,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>3</td><td>2.13</td><td>0</td>
+          <td>JSON</td><td>3</td><td>1.2</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>2</td><td>3</td><td>33.33</td>
+          <td>when-json-met-bigint</td><td>2</td><td>3.72</td><td>33.33</td>
         </tr>
       </tbody>
     </table>
@@ -452,9 +459,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>1.4</td><td>4.26</td><td>0</td>
+          <td>JSON</td><td>1.4</td><td>3.1</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>1</td><td>3.59</td><td>28.57</td>
+          <td>when-json-met-bigint</td><td>1.2</td><td>1.66</td><td>14.29</td>
         </tr>
       </tbody>
     </table>
@@ -480,9 +487,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>171</td><td>1.62</td><td>0</td>
+          <td>JSON</td><td>172</td><td>0.46</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>114</td><td>1.08</td><td>33.33</td>
+          <td>when-json-met-bigint</td><td>139</td><td>0.29</td><td>19.19</td>
         </tr>
       </tbody>
     </table>
@@ -508,9 +515,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>6</td><td>2.27</td><td>0</td>
+          <td>JSON</td><td>6</td><td>1.75</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>4</td><td>2.71</td><td>33.33</td>
+          <td>when-json-met-bigint</td><td>4</td><td>2</td><td>33.33</td>
         </tr>
       </tbody>
     </table>
@@ -536,9 +543,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>3</td><td>1.27</td><td>0</td>
+          <td>JSON</td><td>3</td><td>1.04</td><td>0</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>2</td><td>1.57</td><td>33.33</td>
+          <td>when-json-met-bigint</td><td>2</td><td>2.44</td><td>33.33</td>
         </tr>
       </tbody>
     </table>
@@ -564,9 +571,9 @@ Using [benny](https://github.com/caderek/benny), `when-json-met-bigint` vs
       </thead>
       <tbody>
         <tr>
-          <td>JSON</td><td>299</td><td>0.45</td><td>0</td>
+          <td>JSON</td><td>298</td><td>0.78</td><td>7.45</td>
         </tr><tr>
-          <td>when-json-met-bigint</td><td>261</td><td>1.11</td><td>12.71</td>
+          <td>when-json-met-bigint</td><td>322</td><td>1.05</td><td>0</td>
         </tr>
       </tbody>
     </table>

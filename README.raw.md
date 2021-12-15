@@ -12,7 +12,12 @@ determinism.
 Compare to [json-bigint](https://github.com/sidorares/json-bigint),
 `when-json-met-bigint` try its best to be "default JSON API compliant", all
 custom behaviours are opt-in through options (e.g `options.protoAction`
-'preserve' instead of 'error' by default).
+'preserve' instead of 'error' by default). Performance-wise this package might
+be theoretically a little bit faster thanks to cache, depends on use cases.
+
+Compare to default `JSON` on non-bigint objects, small fixes were made regarding
+type definition to align with the spec, for example `JSONB.stringify` return
+`undefined` if called with `symbol` or `Function` as value.
 
 Implemented following ES2022 `JSON.parse/stringify`
 [specification](https://tc39.es/ecma262/#sec-json.parse).
@@ -94,9 +99,9 @@ type as you can see
 [here](https://github.com/theia-ide/tsp-typescript-client/pull/37). That PR has
 an interesting approach which this solution is inspired from.
 
-In order to overcome the limitation, we need an API for users to decide per case
-& per field whether it should be `bigint` or `number`. This API is exposed
-through a schema-like object. Its type is defined as following;
+In order to overcome the limitation, we need a parser's API so that users can
+specify per case & per field whether it should be `bigint` or `number`. This API
+is exposed through a schema-like object. Its type is defined as following;
 
 ```typescript
 type Schema =
@@ -138,10 +143,12 @@ having no schema.
 If a value different from those defined above passed in or returned from the
 callback, it is as if there is no schema.
 
-The package also export a `Schema<T>` type definition, given an optional generic
-parameter, will infer the appropriate structure type for the schema. If no type
-given it returns the `Schema` type defined above. The generic type parameter can
-also be passed to the `parse` function if wanted.
+To aid with `Typescript` support, the package also export a `Schema<T>` type
+definition, given an optional generic parameter, will infer the appropriate
+structure type for the schema. If no type given it returns the `Schema` type
+defined above. The generic type parameter can also be passed to the `parse<T>`
+function if wanted to have similar effect, that is to constraint the type of the
+schema argument.
 
 example:
 
