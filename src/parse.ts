@@ -52,9 +52,24 @@ export type Schema<T = unknown> = unknown extends T
     ? {
           [K in keyof T as K extends symbol
               ? never
-              : Schema<T[K]> extends Record<StringOrNumberOrSymbol, never>
-              ? never
-              : K | symbol]?: Schema<T[K]>;
+              : // This is originally to filter out the keys that don't need
+                // schema, but somehow mysteriously make the compiler always omit
+                // keys that have generic type itself, for example:
+                // const f = <T>() => {
+                //     const sch: Schema<{ a: T, b: string }>
+                // }
+                // gives sch type {}
+                // It is not the type of sch extends Record<StringOrNumberOrSymbol, never>.
+                // When trying something like this
+                //   : Schema<T[K]> extends Record<StringOrNumberOrSymbol, never>
+                //   ? K | symbol
+                //   K | symbol]?: Schema<T[K]>;
+                // the type of sch is still { b?: undefined } only.
+                // Meaning the key 'a' is always removed for some reason.
+
+                //   : Schema<T[K]> extends Record<StringOrNumberOrSymbol, never>
+                //   ? never
+                K | symbol]?: Schema<T[K]>;
       }
     : never;
 

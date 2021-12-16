@@ -11,23 +11,23 @@ const isNonNullObjectWithToJSOnImplemented = <T>(
 const toPrimitive = <T>(o: Number | String | T) =>
     o instanceof Number ? Number(o) : o instanceof String ? String(o) : o;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-const ESCAPABLE =
-    // eslint-disable-next-line no-control-regex, no-misleading-character-class
-    /[\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g;
-// eslint-disable-next-line @typescript-eslint/naming-convention
-const META = {
-    // Table of character substitutions.
-    "\b": `\\b`,
-    "\t": `\\t`,
-    "\n": `\\n`,
-    "\f": `\\f`,
-    "\r": `\\r`,
-    '"': `\\"`,
-    "\\": `\\\\`,
-} as const;
-
 const quote = (() => {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    const ESCAPABLE =
+        // eslint-disable-next-line no-control-regex, no-misleading-character-class
+        /[\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g;
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    const META = {
+        // Table of character substitutions.
+        "\b": `\\b`,
+        "\t": `\\t`,
+        "\n": `\\n`,
+        "\f": `\\f`,
+        "\r": `\\r`,
+        '"': `\\"`,
+        "\\": `\\\\`,
+    } as const;
+
     const cache = new Cache<string, string>();
     return (s: string) => {
         if (!cache.has(s)) {
