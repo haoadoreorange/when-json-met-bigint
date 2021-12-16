@@ -383,6 +383,7 @@ const user = JSONBno__proto__.parse(
 ### TODO:
 
 -   Align error message with default `JSON`
+-   Fix Schema type definition, see code's comment
 -   Add turbo mode
 
 ### Links:
