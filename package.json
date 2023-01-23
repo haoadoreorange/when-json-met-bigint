@@ -10,8 +10,8 @@
         "stringify"
     ],
     "main": "dist/index.js",
-    "types": "dist/index.d.js",
-    "typings": "dist/index.d.js",
+    "types": "dist/index.d.ts",
+    "typings": "dist/index.d.ts",
     "license": "MIT",
     "repository": "https://github.com/haoadoresorange/when-json-met-bigint",
     "author": "haoadoresorange",
